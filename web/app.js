@@ -59,8 +59,9 @@ function renderDetail() {
 function refresh() {
   const have = reachable(model, st, $('enc').checked), miss = have ? COUNTED.filter(i => !have.has(i)) : [];
   $('reach').innerHTML = !have ? '<small>Die Prüfung „ohne Tausch erhältlich“ gibt es für dieses Spiel noch nicht.</small>' :
-    `<b>${COUNTED.length - miss.length} von ${COUNTED.length}</b> Digimon ohne Matching erhältlich` +
-    (miss.length ? ' – fehlen:' : ' <span class="ok">✓</span>') + (G.npc && G.npc.length ? ` <small>(nicht gezählt: ${G.npc.map(N).join(', ')}, im Original gar nicht erhältlich)</small>` : '');
+    `<b>${COUNTED.length - miss.length} von ${COUNTED.length}</b> Digimon ohne Matching/Tausch erhältlich` +
+    (miss.length ? ' – fehlen:' : ' <span class="ok">✓</span>') + (G.npc && G.npc.length ? ` <small>(nicht gezählt: ${G.npc.map(N).join(', ')}, im Original gar nicht erhältlich)</small>` : '') +
+    (G.reachNote ? ` <small>(${G.reachNote})</small>` : '');
   $('missing').innerHTML = miss.map(i => `<span data-go="${i}">${img(i)}${N(i)}</span>`).join('');
   $('missing').querySelectorAll('[data-go]').forEach(el => el.onclick = () => { cur = +el.dataset.go; refresh(); });
   const q = $('q').value.toLowerCase(), only = $('onlychg').checked;
@@ -85,7 +86,7 @@ var loadFile = async function (file) {
   }
   $('msg1').innerHTML = `<span class="ok">${file.name}: ${G.title} (${model.lang === 'en' ? 'USA' : 'deutsche Fassung'}), ${DEX.length} Digimon gelesen.</span>`;
   $('de').checked = model.lang === 'en'; $('delab').classList.toggle('hide', model.lang !== 'en');
-  $('enclab').classList.toggle('hide', !G.encounters); $('enc').checked = !!G.encounters; $('enctext').textContent = G.encounterLabel || '';
+  $('enclab').classList.toggle('hide', !(G.encounters || G.wildCopy)); $('enc').checked = !!(G.encounters || G.wildCopy); $('enctext').textContent = G.encounterLabel || '';
   const presets = [['orig', 'Original-Routen der ROM'], ...Object.entries(G.presetNames || {})];
   $('preset').innerHTML = opts(presets.reverse(), presets[0][0]);
   st = presetState(model, $('preset').value); cur = DEX[0]; $('main').classList.remove('hide'); refresh();
@@ -98,12 +99,12 @@ drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
 drop.ondragleave = () => drop.classList.remove('over');
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); };
 $('q').oninput = refresh; $('onlychg').onchange = refresh; $('enc').onchange = refresh;
-$('apply').onclick = () => { st = presetState(model, $('preset').value); if (G.encounters) $('enc').checked = $('preset').value !== 'orig'; refresh(); };
+$('apply').onclick = () => { st = presetState(model, $('preset').value); if (G.encounters || G.wildCopy) $('enc').checked = $('preset').value !== 'orig'; refresh(); };
 $('exp').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([exportJSON(model, st)], { type: 'application/json' })); a.download = 'digitationen-' + model.game + '.json'; a.click(); };
 $('impb').onclick = () => $('imp').click();
 $('imp').onchange = async e => { try { st = importJSON(model, await e.target.files[0].text()); refresh(); } catch (err) { alert(err.message); } e.target.value = ''; };
 $('go').onclick = async () => {
-  const de = $('de').checked && model.lang === 'en', enc = $('enc').checked && !!G.encounters, evo = $('evo').checked && st.some((x, i) => changed(model, st, i)) ? st : null;
+  const de = $('de').checked && model.lang === 'en', enc = $('enc').checked && !!(G.encounters || G.wildCopy), evo = $('evo').checked && st.some((x, i) => changed(model, st, i)) ? st : null;
   try {
     $('msg').textContent = 'Patche …'; $('msg').className = '';
     const out = patchRom(rom, model, { de, enc, evo }, de ? await germanPatch(model) : null);

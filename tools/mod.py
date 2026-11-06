@@ -5,11 +5,14 @@ moves, so a mod works on the English ROM and on any translated build of it.
     python mod.py <mod dir> --bps <in.nds> <out.bps>    write a BPS patch (in -> in + mod)
 
 mod.json:
-    game        "ds" | "dawn" | "dusk" (the ROM is checked)
+    game        "ds" | "dawn" | "dusk", or a list of them (the ROM is checked)
     evolutions  [{from, slot (0-2), to, level, cond, value[, cond2, value2], set_degenerate}]
                 writes digivolution route <slot> of species <from>; Dawn/Dusk routes have two conditions
     encounters  [{areas, species, chance}]   DS only: adds one single-Digimon formation with <chance>/10000 to every
                 normal encounter group of these areas, taken from the group's most likely formation
+    drop_self_gates   Dawn/Dusk: remove "has befriended X" conditions on routes (and degenerations) into X itself
+    wild_copy   Dawn/Dusk: [{to, from, species}] appends the wild-encounter entry of <species> in file <from>
+                (dat/ec/eNNN.bin) to file <to>; the file grows and is moved to the end of the ROM
 Species ids are the game's own (see the editor on the web page, or mod.json files of existing mods).
 """
 import json, os, struct, sys
@@ -39,8 +42,8 @@ def load(moddir):
 
 def edits(nds, mod):
     """[(path, offset, new bytes)] for every record the mod changes"""
-    game = GAMES.get(nds.code)
-    if game != mod['game']: raise SystemExit('mod is for %s, ROM is %s (%s)' % (mod['game'], game, nds.code))
+    game = GAMES.get(nds.code); want = mod['game'] if isinstance(mod['game'], list) else [mod['game']]
+    if game not in want: raise SystemExit('mod is for %s, ROM is %s (%s)' % ('/'.join(want), game, nds.code))
     out = []
     sk = records(nds, 'sk', SK_SIZE[game]); n = SK_SIZE[game] // 4
     rec = {i: list(struct.unpack('<%dI' % n, r)) for i, (_, _, r) in enumerate(sk)}
@@ -57,8 +60,17 @@ def edits(nds, mod):
         if e.get('set_degenerate'):
             rec[e['to']][prev] = e['from']; touched.add(e['to'])
             if game != 'ds': rec[e['to']][4:10] = block_into(rec, e['from'])
+    if mod.get('drop_self_gates'):
+        if game == 'ds': raise SystemExit('drop_self_gates is for Dawn/Dusk')
+        for i, f in rec.items():
+            for k in range(4):                      # k = 0: degeneration into f[0], 1-3: routes
+                t = f[k]
+                if t == FF: continue
+                for c in (6 + 6 * k, 8 + 6 * k):
+                    if f[c] == 22 and f[c + 1] == t: f[c] = f[c + 1] = 0; touched.add(i)
     for i in sorted(touched):
-        p, o, _ = sk[i]; out.append((p, o, struct.pack('<%dI' % n, *rec[i])))
+        p, o, r = sk[i]; nb = struct.pack('<%dI' % n, *rec[i])
+        if nb != r: out.append((p, o, nb))
     if mod.get('encounters'):
         if game != 'ds': raise SystemExit('encounter mods are only supported for Digimon World DS')
         for p, o, r in records(nds, 'ec', EC_SIZE):
@@ -78,6 +90,22 @@ def edits(nds, mod):
     return out
 
 
+def wild_copies(nds, mod):
+    """Dawn/Dusk: {path: new file bytes} for wild_copy (u16 count at 0, 16-byte header, 24-byte entries, 4 zero bytes)"""
+    files = {}
+    for w in mod.get('wild_copy', []):
+        src = files.get(w['from']) or nds.read(w['from'])
+        n = struct.unpack_from('<H', src, 0)[0]
+        ent = [src[16 + 24 * k:40 + 24 * k] for k in range(n)]
+        e = next((x for x in ent if struct.unpack_from('<H', x)[0] == w['species']), None)
+        if e is None: raise SystemExit('species %d not in %s' % (w['species'], w['from']))
+        dst = bytearray(files.get(w['to']) or nds.read(w['to'])); m = struct.unpack_from('<H', dst, 0)[0]
+        end = 16 + 24 * m                           # entries are followed by a 4-byte zero trailer
+        if len(dst) != end + 4 or any(dst[end:]): raise SystemExit('unexpected layout of %s' % w['to'])
+        struct.pack_into('<H', dst, 0, m + 1); files[w['to']] = bytes(dst[:end]) + e + bytes(dst[end:])
+    return files
+
+
 def block_into(rec, sp):
     """Dawn/Dusk: block 0 of a record holds the requirement of its 'degenerates to' Digimon"""
     prev = rec[sp][0]
@@ -89,8 +117,10 @@ def block_into(rec, sp):
 
 
 def apply(nds, mod):
+    grown = wild_copies(nds, mod)
     for p, o, b in edits(nds, mod):
         d = bytearray(nds.read(p)); d[o:o + len(b)] = b; nds.write(p, d)
+    for p, b in grown.items(): nds.write(p, b)
 
 
 if __name__ == '__main__':
@@ -102,7 +132,7 @@ if __name__ == '__main__':
         if bps.apply(src, p) != tgt: raise SystemExit('internal error: patch does not reproduce the build')
         open(a[3], 'wb').write(p); print('%d bytes -> %s' % (len(p), a[3]))
     elif len(a) == 3:
-        mod = load(a[0]); r = NDS(a[1]); n = len(edits(r, mod)); apply(r, mod); r.save(a[2])
+        mod = load(a[0]); r = NDS(a[1]); n = len(edits(r, mod)) + len(wild_copies(r, mod)); apply(r, mod); r.save(a[2])
         print('%d records changed -> %s' % (n, a[2]))
     else:
         print(__doc__)

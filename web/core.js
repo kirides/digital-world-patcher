@@ -33,7 +33,7 @@ function ndsFiles(d) {
     let p = fnt + dv.getUint32(fnt + (id & 0xfff) * 8, true), fid = dv.getUint16(fnt + (id & 0xfff) * 8 + 4, true);
     for (;;) { const n = d[p++]; if (!n) break; const l = n & 0x7f; let name = ''; for (let i = 0; i < l; i++) name += String.fromCharCode(d[p + i]); p += l;
       if (n & 0x80) { const sub = dv.getUint16(p, true); p += 2; walk(sub, pre + name + '/'); }
-      else { files[pre + name] = [dv.getUint32(fat + fid * 8, true), dv.getUint32(fat + fid * 8 + 4, true)]; fid++; } }
+      else { files[pre + name] = [dv.getUint32(fat + fid * 8, true), dv.getUint32(fat + fid * 8 + 4, true), fid]; fid++; } }
   })(0xF000, '');
   return files;
 }
@@ -158,6 +158,7 @@ function presetState(model, name) {
   if (pre) for (const [id, ch] of Object.entries(pre)) {
     for (const k of [0, 1, 2]) if (('s' + k) in ch) st[id].s[k] = ch['s' + k].slice();
     if ('p' in ch) st[id].p = ch.p;
+    if ('pb' in ch) st[id].pb = ch.pb.slice();
   }
   return st;
 }
@@ -172,7 +173,8 @@ function encodeRecord(model, st, i) {
     for (let k = 0; k < 3; k++) { const s = e.s[k];
       if (s) { u[k + 1] = s[0]; u.set([1, s[1], s[2], s[3], s[4] || 0, s[5] || 0], 4 + 6 * (k + 1)); } else { u[k + 1] = FF; u.set([0, 0, 0, 0, 0, 0], 4 + 6 * (k + 1)); } }
     u[0] = e.p === null ? FF : e.p;
-    if (e.p !== model.evo[i].p) {             // block 0 holds the requirement of the "degenerates to" Digimon
+    if (JSON.stringify(e.pb) !== JSON.stringify(model.evo[i].pb)) u.set(e.pb, 4);
+    else if (e.p !== model.evo[i].p) {             // block 0 holds the requirement of the "degenerates to" Digimon
       let blk = [0, 0, 0, 0, 0, 0];
       if (e.p !== null && st[e.p] && st[e.p].p !== null) { const s = st[st[e.p].p].s.find(x => x && x[0] === e.p); if (s) blk = [1, s[1], s[2], s[3], s[4] || 0, s[5] || 0]; }
       u.set(blk, 4);
@@ -192,12 +194,13 @@ function reachable(model, st, withEnc) {   // only for games with known offline 
   const G = G_(model); if (!G.sources) return null;
   const have = new Set(G.sources), gate = G.befriended;
   if (withEnc) (G.encounters || []).forEach(e => have.add(e[1]));
+  if (withEnc) (G.wildCopy || []).forEach(w => { if (G.reachFiles.includes(w[0])) have.add(w[2]); });
+  const open = (conds) => { for (let c = 0; c + 1 < conds.length; c += 2) if (conds[c] === gate && !have.has(conds[c + 1])) return false; return true; };
   for (let ch = true; ch;) { ch = false;
     for (const i of [...have]) { const e = st[i]; if (!e) continue;
-      for (const s of e.s) { if (!s || have.has(s[0])) continue;
-        let ok = true; for (let c = 2; c + 1 < s.length; c += 2) if (s[c] === gate && !have.has(s[c + 1])) ok = false;
-        if (ok) { have.add(s[0]); ch = true; } }
-      if (e.p !== null && !have.has(e.p)) { have.add(e.p); ch = true; } } }
+      for (const s of e.s) if (s && !have.has(s[0]) && open(s.slice(2))) { have.add(s[0]); ch = true; }
+      // degenerating needs the requirement of the target (Dawn/Dusk keep it in block 0)
+      if (e.p !== null && !have.has(e.p) && (!e.pb || open(e.pb.slice(2)))) { have.add(e.p); ch = true; } } }
   return have;
 }
 function encounterEdits(model) {     // DS only, same rule as offline.py
@@ -218,6 +221,35 @@ function encounterEdits(model) {     // DS only, same rule as offline.py
   }
   return out;
 }
+function wildCopyFiles(model, d, files) {   // Dawn/Dusk: same as tools/mod.py wild_copies
+  const out = {}, get = p => out[p] || d.slice(files[p][0], files[p][1]);
+  for (const [to, from, sp] of G_(model).wildCopy || []) {
+    const src = get(from), n = dvOf(src).getUint16(0, true); let e = null;
+    for (let k = 0; k < n; k++) if (dvOf(src).getUint16(16 + 24 * k, true) === sp) { e = src.slice(16 + 24 * k, 40 + 24 * k); break; }
+    if (!e) throw new Error('Digimon ' + sp + ' fehlt in ' + from);
+    const dst = get(to), m = dvOf(dst).getUint16(0, true), end = 16 + 24 * m;
+    if (dst.length !== end + 4) throw new Error('unerwartetes Format: ' + to);
+    const nb = new Uint8Array(dst.length + 24); nb.set(dst.subarray(0, end)); nb.set(e, end); nb.set(dst.subarray(end), end + 24);
+    dvOf(nb).setUint16(0, m + 1, true); out[to] = nb;
+  }
+  return out;
+}
+function crc16(d, n) { let c = 0xFFFF; for (let i = 0; i < n; i++) { c ^= d[i]; for (let k = 0; k < 8; k++) c = c & 1 ? (c >>> 1) ^ 0xA001 : c >>> 1; } return c; }
+function writeFiles(d, files, list) {   // same algorithm as tools/ndsfs.py build(): in place if it fits, else appended
+  const dv = dvOf(d), fat = dv.getUint32(0x48, true), fsz = dv.getUint32(0x4C, true) / 8, ids = {};
+  for (const [p, v] of Object.entries(ndsFiles(d))) ids[p] = v[2];
+  let end = 0; for (let i = 0; i < fsz; i++) end = Math.max(end, dv.getUint32(fat + 8 * i + 4, true));
+  end = (end + 0x1FF) & ~0x1FF;
+  for (const [p, blob] of list) {
+    const i = ids[p], s = dv.getUint32(fat + 8 * i, true), e = dv.getUint32(fat + 8 * i + 4, true);
+    if (blob.length <= e - s) { d.set(blob, s); dv.setUint32(fat + 8 * i + 4, s + blob.length, true); }
+    else { if (end + blob.length > d.length) throw new Error('ROM ist voll');
+      d.fill(0xFF, end); d.set(blob, end); dv.setUint32(fat + 8 * i, end, true); dv.setUint32(fat + 8 * i + 4, end + blob.length, true);
+      end = (end + blob.length + 0x1FF) & ~0x1FF; }
+  }
+  let used = 0; for (let i = 0; i < fsz; i++) used = Math.max(used, dv.getUint32(fat + 8 * i + 4, true));
+  dv.setUint32(0x80, used, true); dv.setUint16(0x15E, crc16(d, 0x15E), true);
+}
 function patchRom(rom, model, opt, bps) {  // opt: {de, enc, evo: state|null}; bps: German patch bytes when opt.de
   if (model.lang === 'de' && opt.de) throw new Error('Diese ROM ist schon übersetzt: Häkchen bei „Deutsch“ entfernen.');
   const out = opt.de ? applyBPS(rom, bps) : rom.slice();
@@ -225,6 +257,7 @@ function patchRom(rom, model, opt, bps) {  // opt: {de, enc, evo: state|null}; b
   if (opt.enc) for (const [p, o, b] of encounterEdits(model)) put(p, o, b);
   if (opt.evo) { const errs = validate(model, opt.evo); if (errs.length) throw new Error(errs.slice(0, 5).join('\n'));
     opt.evo.forEach((e, i) => { if (changed(model, opt.evo, i)) put(model.sk[i].path, model.sk[i].off, encodeRecord(model, opt.evo, i)); }); }
+  if (opt.enc && G_(model).wildCopy) writeFiles(out, f, Object.entries(wildCopyFiles(model, out, f)));
   return out;
 }
 async function germanPatch(model) {

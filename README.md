@@ -11,8 +11,8 @@ JSON). Everything runs locally; the ROM never leaves your device. No ROMs are pa
 | Game | Supported ROM (CRC32) | German | Mods |
 |---|---|---|---|
 | Digimon World DS | USA `B6F4762E` | ✓ | `ds-offline` |
-| Digimon World Dawn | USA `75625E58` | ✓ | – (offline preset in progress) |
-| Digimon World Dusk | USA `C04136FF` | ✓ | – (offline preset in progress) |
+| Digimon World Dawn | USA `75625E58` | ✓ | `dawn-dusk-offline` |
+| Digimon World Dusk | USA `C04136FF` | ✓ | `dawn-dusk-offline` |
 
 ## Layout
 
@@ -41,11 +41,12 @@ tests/          node tests for the web core against the Python builds
 ## Add a mod
 
 1. Create `mods/<name>/mod.json` (see `mods/ds-offline/mod.json` and the format in `tools/mod.py`):
-   `game`, `name`, and `evolutions` (route changes) and/or `encounters` (DS: extra wild Digimon).
+   `game`, `name`, and `evolutions` (route changes), `encounters` (DS: extra wild Digimon),
+   `wild_copy` / `drop_self_gates` (Dawn/Dusk, see `mods/dawn-dusk-offline`).
    Species ids are the game's own; the editor on the web page shows every Digimon and route.
 2. Try it: `python tools/mod.py mods/<name> <rom.nds> <out.nds>`, or as BPS: `--bps`.
 3. `python tools/build_web.py --patches web/patches <ROMs>` adds it to the page as a preset of its game.
-4. `node tests/test_web.js <rom dir> <release dir>` checks the page against the Python builds.
+4. `node tests/test_web.js <rom dir> <release dir> <mod dir>` checks the page against the Python builds.
 
 ## Rebuild the page data
 

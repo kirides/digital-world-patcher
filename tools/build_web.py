@@ -83,47 +83,94 @@ def meta_ds(nds):
             'items': {429 + i: n for i, n in enumerate(KEY_ITEMS)}}
 
 
+# Dawn/Dusk: same data, the version decides which dungeons can be entered. Encounter areas (dat/ec/enctbl.bin) that a
+# version cannot enter, identified by their wild Digimon and checked against the GameFAQs list of version exclusives.
+LOCKED_AREAS = {'dawn': [22, 23, 24, 25, 37, 38, 39, 40, 41, 59, 60],   # Magnet Mine, Process Factory, Shadow Abyss
+                'dusk': [31, 32, 33, 34, 35, 36, 55, 56, 57, 58]}       # Task Canyon, Highlight Haven
+
+
+def pak_wild(nds, game):
+    """{efile path: [species]} and the set of efile paths a version can reach"""
+    e = nds.read('dat/ec/enctbl.bin'); rows = [struct.unpack_from('<4H', e, 8 * i) for i in range(len(e) // 8)]
+    efiles = sorted(p for p in nds.files if p.startswith('dat/ec/e') and p[8:11].isdigit())
+    species = {}
+    for p in efiles:
+        b = nds.read(p); n = struct.unpack_from('<H', b)[0]
+        species[p] = [struct.unpack_from('<H', b, 16 + 24 * k)[0] for k in range(n)]
+    reach = {efiles[r[1]] for r in rows if r[0] != 0xFFFF and r[1] < len(efiles) and r[0] not in LOCKED_AREAS[game]}
+    return species, reach
+
+
 def meta_pak(nds):
     g = dgmtool.Game(nds)
     pat = struct.pack('<10H', *g.cs.encode('Chicchimon')) + bytes([255, 255])   # first name of the species block
     start = bytes(nds.data).find(pat)
     if start < 0: raise SystemExit('name block not found')
+    game = TITLES[nds.title][0]; species, reach = pak_wild(nds, game)
     return {'layout': 'pak', 'skSize': 112, 'nconds': 2, 'conds': CONDS_PAK, 'befriended': 22, 'idBase': 65,
-            'charset': dgmtool.Charset('pak', dgmtool.load_lang('de')).dec, 'nameStart': start}
+            'charset': dgmtool.Charset('pak', dgmtool.load_lang('de')).dec, 'nameStart': start,
+            'sources': sorted({s for p in reach for s in species[p]}), 'reachFiles': sorted(reach),
+            'reachNote': 'ohne DNA-Digitation, Eier und Passwörter gerechnet'}
 
 
-def add_mods(meta):
-    """mods/<name>/mod.json -> presets (digivolution overrides) and encounter additions of their game"""
+def decode_sk(rec, game):
+    """one digivolution record -> page state {s: [slot|None]*3, p, (pb)} (same as loadModel in web/core.js)"""
+    FF = 0xFFFFFFFF
+    if game == 'ds':
+        f = struct.unpack('<22I', rec)
+        return {'s': [None if f[k] == FF else [f[k], f[4 + 6 * k], f[5 + 6 * k], f[6 + 6 * k]] for k in range(3)],
+                'p': None if f[21] == FF else f[21]}
+    f = struct.unpack('<28I', rec)
+    return {'s': [None if f[k] == FF else [f[k]] + list(f[5 + 6 * k:10 + 6 * k]) for k in (1, 2, 3)],
+            'p': None if f[0] == FF else f[0], 'pb': list(f[4:10])}
+
+
+def add_mods(meta, roms):
+    """mods/<name>/mod.json -> a preset per game: the route changes are computed by applying the mod (tools/mod.py)
+    to the game's ROM and diffing the digivolution table; encounter additions are passed on as rules"""
     for name in sorted(os.listdir(os.path.join(ROOT, 'mods'))):
         p = os.path.join(ROOT, 'mods', name, 'mod.json')
         if not os.path.exists(p): continue
-        m = json.load(open(p, encoding='utf-8')); g = meta['games'].get(m['game'])
-        if not g: continue
-        pre = {}
-        for e in m.get('evolutions', []):
-            slot = [e['to'], e['level'], e['cond'], e['value']] + ([e.get('cond2', 0), e.get('value2', 0)] if g['nconds'] == 2 else [])
-            pre.setdefault(str(e['from']), {})['s%d' % e['slot']] = slot
-            if e.get('set_degenerate'): pre.setdefault(str(e['to']), {})['p'] = e['from']
-        g.setdefault('presets', {})[name] = pre
-        g.setdefault('presetNames', {})[name] = m['name']
-        if m.get('encounters'):
-            g['encounters'] = g.get('encounters', []) + [[x['areas'], x['species'], x['chance'], '%s, %d %% der Begegnungen' % (x['where'], x['chance'] // 100)] for x in m['encounters']]
-            g['encounterLabel'] = ' und '.join('%s (%s)' % (x['species_name'], x['where']) for x in m['encounters']) + ' als wilde Digimon (%s)' % m['name'].split(':')[0]
+        m = json.load(open(p, encoding='utf-8'))
+        for game in (m['game'] if isinstance(m['game'], list) else [m['game']]):
+            g = meta['games'].get(game)
+            if not g: continue
+            nds = roms[game]; size = modlib.SK_SIZE[game]
+            orig = {(pp, o): r for pp, o, r in modlib.records(nds, 'sk', size)}
+            idx = {k: i for i, k in enumerate(orig)}
+            pre = {}
+            for pp, o, nb in modlib.edits(nds, m):
+                if (pp, o) not in idx: continue
+                a, b = decode_sk(orig[(pp, o)], game), decode_sk(nb, game); ch = {}
+                for k in range(3):
+                    if a['s'][k] != b['s'][k]: ch['s%d' % k] = b['s'][k]
+                for key in ('p', 'pb'):
+                    if a.get(key) != b.get(key): ch[key] = b[key]
+                if ch: pre[str(idx[(pp, o)])] = ch
+            g.setdefault('presets', {})[name] = pre
+            g.setdefault('presetNames', {})[name] = m['name']
+            if m.get('encounters'):
+                g['encounters'] = g.get('encounters', []) + [[x['areas'], x['species'], x['chance'], '%s, %d %% der Begegnungen' % (x['where'], x['chance'] // 100)] for x in m['encounters']]
+                g['encounterLabel'] = ' und '.join('%s (%s)' % (x['species_name'], x['where']) for x in m['encounters']) + ' als wilde Digimon (%s)' % m['name'].split(':')[0]
+            if m.get('wild_copy'):
+                g['wildCopy'] = [[w['to'], w['from'], w['species']] for w in m['wild_copy']]
+                g['encounterLabel'] = 'Version-exklusive Digimon zusätzlich in den Dungeons der anderen Version (%s)' % ', '.join(sorted({w['species_name'] for w in m['wild_copy']}))
+            if m.get('sources'): g['sources'] = m['sources']
 
 
 if __name__ == '__main__':
     a = sys.argv[1:]
     pdir = a[a.index('--patches') + 1]; single = a[a.index('--single') + 1] if '--single' in a else None
     roms = [x for i, x in enumerate(a) if x not in ('--patches', '--single') and (i == 0 or a[i - 1] not in ('--patches', '--single'))]
-    meta = {'roms': {}, 'games': {}}; patches = {}
+    meta = {'roms': {}, 'games': {}}; patches = {}; loaded = {}
     for rom in roms:
-        nds = NDS(rom); game, title = TITLES[nds.title]
+        nds = NDS(rom); game, title = TITLES[nds.title]; loaded[game] = nds
         name = '%s (Deutsch).bps' % title; patch = open(os.path.join(pdir, name), 'rb').read()
         src = open(rom, 'rb').read(); de = bps.apply(src, patch); patches[name] = patch
         meta['games'][game] = dict(meta_ds(nds) if game == 'ds' else meta_pak(nds), title=title)
         for lang, data in (('en', src), ('de', de)):
             meta['roms']['%08X' % zlib.crc32(data)] = {'game': game, 'lang': lang, 'crc': '%08X' % zlib.crc32(data), 'patch': name}
-    add_mods(meta)
+    add_mods(meta, loaded)
     web = os.path.join(ROOT, 'web')
     if single:
         rd = lambda f: open(os.path.join(web, f), encoding='utf-8').read()

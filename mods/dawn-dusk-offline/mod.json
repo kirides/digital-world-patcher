@@ -1,0 +1,84 @@
+{
+ "name": "Offline: alle Digimon ohne Tausch",
+ "name_en": "Offline: every Digimon without trading",
+ "game": [
+  "dawn",
+  "dusk"
+ ],
+ "description": "Dawn and Dusk share all game data; the version split is which dungeons each version can enter (Dawn: Task Canyon, Highlight Haven; Dusk: Magnet Mine, Process Factory, Shadow Abyss). This mod copies the few wild Digimon that every version-exclusive line starts from into the other version's exclusive dungeon (same level and rate as in the original dungeon), and removes the self-referential 'has befriended X' conditions on routes into X, which otherwise need an egg, a trade or an event. Data-only; one mod for both versions.",
+ "drop_self_gates": true,
+ "wild_copy": [
+  {
+   "to": "dat/ec/e029.bin",
+   "from": "dat/ec/e020.bin",
+   "species": 87,
+   "species_name": "Moonmon"
+  },
+  {
+   "to": "dat/ec/e029.bin",
+   "from": "dat/ec/e020.bin",
+   "species": 123,
+   "species_name": "Keramon"
+  },
+  {
+   "to": "dat/ec/e029.bin",
+   "from": "dat/ec/e020.bin",
+   "species": 73,
+   "species_name": "Kuramon"
+  },
+  {
+   "to": "dat/ec/e030.bin",
+   "from": "dat/ec/e021.bin",
+   "species": 236,
+   "species_name": "Tsuchidarumon"
+  },
+  {
+   "to": "dat/ec/e050.bin",
+   "from": "dat/ec/e052.bin",
+   "species": 81,
+   "species_name": "Tsumemon"
+  },
+  {
+   "to": "dat/ec/e050.bin",
+   "from": "dat/ec/e054.bin",
+   "species": 291,
+   "species_name": "SkullGreymon"
+  },
+  {
+   "to": "dat/ec/e051.bin",
+   "from": "dat/ec/e055.bin",
+   "species": 407,
+   "species_name": "Piedmon"
+  },
+  {
+   "to": "dat/ec/e020.bin",
+   "from": "dat/ec/e029.bin",
+   "species": 86,
+   "species_name": "Sunmon"
+  },
+  {
+   "to": "dat/ec/e020.bin",
+   "from": "dat/ec/e029.bin",
+   "species": 75,
+   "species_name": "Chibomon"
+  },
+  {
+   "to": "dat/ec/e020.bin",
+   "from": "dat/ec/e029.bin",
+   "species": 100,
+   "species_name": "Guilmon"
+  },
+  {
+   "to": "dat/ec/e021.bin",
+   "from": "dat/ec/e030.bin",
+   "species": 145,
+   "species_name": "Kudamon"
+  },
+  {
+   "to": "dat/ec/e023.bin",
+   "from": "dat/ec/e032.bin",
+   "species": 418,
+   "species_name": "Imperialdramon Fighter Mode"
+  }
+ ]
+}

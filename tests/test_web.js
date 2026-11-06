@@ -1,6 +1,7 @@
 // Run the web patcher's core under node and compare its output with the Python builds.
-//   node tests/test_web.js <rom dir> <release dir>
+//   node tests/test_web.js <rom dir> <release dir> <mod dir>
 // rom dir: the original USA ROMs; release dir: de/*.nds (dgmtool release --keep-roms) and de_offline/ (with --mod mods/ds-offline)
+// mod dir: '<Game>_off.nds' and '<Game>_de_off.nds' from tools/mod.py mods/dawn-dusk-offline (EN and German ROM)
 // Runs web/core.js with web/data/meta.json and web/patches/*.bps, i.e. exactly what GitHub Pages serves.
 const fs = require('fs'), path = require('path');
 const [romDir, rel, scratch] = process.argv.slice(2);
@@ -39,6 +40,16 @@ for (const [game, enFile, deName] of games) {
   check(game + ': JSON round trip', () => api.patchRom(E, mE, { de: false, enc: false, evo: api.importJSON(mE, api.exportJSON(mE, st)) }, null), r => eq(r, out));
   let icons = 0, t0 = Date.now(); for (const x of mE.dex) if (api.icon(E, mE, x)) icons++;
   console.log(`     icons ${icons}/${mE.dex.length} in ${Date.now() - t0} ms`);
+  if (game !== 'ds') {
+    const G = game[0].toUpperCase() + game.slice(1), off = api.presetState(mE, 'dawn-dusk-offline'), offD = api.presetState(mD, 'dawn-dusk-offline');
+    check(game + ': EN -> Offline (= tools/mod.py)', () => api.patchRom(E, mE, { de: false, enc: true, evo: off }, null), path.join(scratch, G + '_off.nds'));
+    check(game + ': EN -> Deutsch + Offline', () => api.patchRom(E, mE, { de: true, enc: true, evo: off }, bpsOf(mE)), path.join(scratch, G + '_de_off.nds'));
+    check(game + ': Deutsch -> Offline', () => api.patchRom(D, mD, { de: false, enc: true, evo: offD }, null), path.join(scratch, G + '_de_off.nds'));
+    for (const [label, s, enc] of [['Original', orig, false], ['Offline', off, true]]) {
+      const h = api.reachable(mE, s, enc), miss = mE.dex.filter(x => !h.has(x));
+      console.log(`     ${label}: ${mE.dex.length - miss.length}/${mE.dex.length} without trading; missing: ${miss.map(x => mE.names[x]).join(', ')}`);
+    }
+  }
   if (game === 'ds') {
     const off = api.presetState(mE, 'ds-offline');
     check('ds: EN -> Offline', () => api.patchRom(E, mE, { de: false, enc: true, evo: off }, null), path.join(rel, 'offline', 'Digimon World DS (Offline).nds'));
