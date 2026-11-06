@@ -66,6 +66,9 @@ CONDS_PAK = [[0, 'keine', 1], [2, 'Drachen-EP ≥', 1], [3, 'Tier-EP ≥', 1], [
     [6, 'Insekt-EP ≥', 1], [7, 'Maschinen-EP ≥', 1], [8, 'Dunkel-EP ≥', 1], [9, 'Heilig-EP ≥', 1], [10, 'Gesamt-EP ≥', 1],
     [11, 'Angriff ≥', 1], [12, 'Verteidigung ≥', 1], [13, 'Geist ≥', 1], [14, 'Tempo ≥', 1], [15, 'Begabung ≥', 1],
     [18, 'Freundschaft ≥ %', 1], [21, 'hat Digimon im Team', 'species'], [22, 'hat Digimon befreundet', 'species']]
+# sound (dat/*/sound_data.sdat): sequences without a loop are jingles; labels can be added to 'music' as they are identified
+SOUND = {'ds': {'jingles': [30, 31, 33], 'digivolveSound': {'seq': 31}, 'defaultTheme': 0, 'music': {}},
+         'pak': {'jingles': [32], 'digivolveSound': {'seq': 32}, 'defaultTheme': 0, 'music': {}}}
 TITLES = {'DIGIMONWORLD': ('ds', 'Digimon World DS'), 'DS2_USA_DAWN': ('dawn', 'Digimon World Dawn'),
           'DS2_USA_DUSK': ('dusk', 'Digimon World Dusk')}
 
@@ -76,7 +79,7 @@ def meta_ds(nds):
     dex_text = g._split(nds.read('dat/msg/DigZknHelp.sdb'))
     dex = [i for i, u in enumerate(dex_text) if g.cs.decode(u).replace('{FFE9}', '').replace('{FFFF}', '').strip()]
     want = set(SOURCES_NAMES) | {'ChronomonHolyMode'}
-    return {'layout': 'ds', 'skSize': 88, 'nconds': 1, 'conds': CONDS_DS, 'befriended': 21,
+    return {**SOUND['ds'], 'layout': 'ds', 'skSize': 88, 'nconds': 1, 'conds': CONDS_DS, 'befriended': 21,
             'charset': dgmtool.Charset('sdb', dgmtool.load_lang('de')).dec, 'nameTable': NAME_TABLE, 'spriteTable': SPRITE_TABLE,
             'sources': sorted(i for i in dex if names[i].replace(' ', '') in want),
             'npc': [i for i in dex if names[i] in NPC_NAMES],
@@ -107,7 +110,7 @@ def meta_pak(nds):
     start = bytes(nds.data).find(pat)
     if start < 0: raise SystemExit('name block not found')
     game = TITLES[nds.title][0]; species, reach = pak_wild(nds, game)
-    return {'layout': 'pak', 'skSize': 112, 'nconds': 2, 'conds': CONDS_PAK, 'befriended': 22, 'idBase': 65,
+    return {**SOUND['pak'], 'layout': 'pak', 'skSize': 112, 'nconds': 2, 'conds': CONDS_PAK, 'befriended': 22, 'idBase': 65,
             'charset': dgmtool.Charset('pak', dgmtool.load_lang('de')).dec, 'nameStart': start,
             'sources': sorted({s for p in reach for s in species[p]}), 'reachFiles': sorted(reach),
             'reachNote': 'ohne DNA-Digitation, Eier und Passwörter gerechnet'}

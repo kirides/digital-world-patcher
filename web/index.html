@@ -1,37 +1,62 @@
 <!DOCTYPE html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Digimon World Patcher &amp; Digitations-Editor (DS, Dawn, Dusk)</title>
+<title>Digital World Patcher · Digimon World DS, Dawn, Dusk</title>
 <link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 3 58 18v28L32 61 6 46V18z' fill='%23ff8a1f'/%3E%3Crect x='17' y='19' width='30' height='22' rx='4' fill='%230b1a33'/%3E%3Cpath d='M22 34l6-8 5 5 4-6 5 9' stroke='%2337e0ff' stroke-width='3' fill='none'/%3E%3C/svg%3E">
 </head><body>
-<h1>Digimon World Patcher &amp; Digitations-Editor</h1>
-<p>Für <b>Digimon World DS</b>, <b>Dawn</b> und <b>Dusk</b> (USA). Alles läuft lokal in deinem Browser, deine ROM wird nirgendwohin hochgeladen. <small>Everything runs locally; nothing is uploaded.</small></p>
+<header class="top">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 3 58 18v28L32 61 6 46V18z" class="lg-shell"/><path d="M32 9 52 20.5v23L32 55 12 43.5v-23z" class="lg-ring"/><rect x="18" y="20" width="28" height="20" rx="3" class="lg-screen"/><path d="M22 34l6-8 5 5 4-6 5 9" class="lg-wave"/><circle cx="32" cy="48" r="3" class="lg-btn"/></svg>
+    <div><h1>Digital World Patcher</h1><p class="sub">Digimon World DS · Dawn · Dusk — Übersetzung &amp; Digitations-Editor</p></div>
+  </div>
+  <div class="sound" id="soundbar" title="Musik und Effekte aus deiner ROM">
+    <button id="mute" class="icon-btn" aria-label="Ton an/aus">🔇</button>
+    <select id="theme" disabled><option>Musik: ROM laden</option></select>
+  </div>
+</header>
 
-<div class="box" id="step1"><h2>1. ROM laden</h2>
-<div id="drop"><p>Ziehe deine ROM hierher oder <label style="margin:0"><u style="cursor:pointer">wähle sie aus</u><input type="file" id="rom" accept=".nds" hidden></label>.<br>
-<small>Das Spiel wird automatisch erkannt. Eine schon übersetzte deutsche Fassung geht auch.</small></p><p id="msg1"></p></div>
-</div>
+<main>
+<p class="lead">Alles läuft lokal in deinem Browser. Deine ROM wird nirgendwohin hochgeladen. <span class="mut">Everything runs locally; nothing is uploaded.</span></p>
+
+<section class="card" id="step1"><h2><span class="step">1</span> ROM laden</h2>
+<div id="drop"><div class="drop-ico">⬢</div><p>Ziehe deine ROM hierher oder <label class="link">wähle sie aus<input type="file" id="rom" accept=".nds" hidden></label></p>
+<p class="mut">Digimon World DS, Dawn oder Dusk (USA) — oder deren deutsche Fassung aus diesem Patcher. Das Spiel wird an der Prüfsumme erkannt.</p><p id="msg1"></p></div>
+</section>
 
 <div id="main" class="hide">
-<div class="box"><h2>2. Digitationen <small>(aus deiner ROM gelesen)</small></h2>
-<p>Vorlage: <select id="preset"></select>
-<button id="apply">Vorlage laden</button>
-<button id="exp">Export JSON</button> <button id="impb">Import JSON</button><input type="file" id="imp" accept=".json" hidden></p>
-<p id="reach"></p><p id="missing" class="chips"></p>
-<div id="ed"><div><input id="q" placeholder="Digimon suchen…" style="width:100%;box-sizing:border-box;margin-bottom:.4em">
-<label><input type="checkbox" id="onlychg"> nur geänderte</label><div id="list"></div></div>
-<div id="detail"></div></div>
+<section class="card"><h2><span class="step">2</span> Digitationen <span class="mut">aus deiner ROM gelesen</span></h2>
+<div class="toolbar">
+  <label class="field">Vorlage <select id="preset"></select></label>
+  <button id="apply">Vorlage laden</button>
+  <span class="grow"></span>
+  <button id="exp" class="ghost">Export JSON</button> <button id="impb" class="ghost">Import JSON</button><input type="file" id="imp" accept=".json" hidden>
 </div>
+<div class="reach"><p id="reach"></p><p id="missing" class="chips"></p></div>
+<div id="ed">
+  <div class="side"><input id="q" placeholder="Digimon suchen…"><label class="chk"><input type="checkbox" id="onlychg"> nur geänderte</label><div id="list"></div></div>
+  <div id="detail"></div>
+</div>
+</section>
 
-<div class="box"><h2>3. Patchen</h2>
-<label id="delab"><input type="checkbox" id="de" checked> Deutsche Übersetzung</label>
-<label id="enclab"><input type="checkbox" id="enc" checked> <span id="enctext"></span></label>
-<label><input type="checkbox" id="evo" checked> Digitationen aus dem Editor übernehmen</label><br>
-<button id="go">Patchen &amp; speichern</button> <span id="msg"></span>
+<section class="card"><h2><span class="step">3</span> Patchen</h2>
+<div class="opts">
+  <label id="delab" class="opt"><input type="checkbox" id="de" checked><span>Deutsche Übersetzung</span></label>
+  <label id="enclab" class="opt"><input type="checkbox" id="enc" checked><span id="enctext"></span></label>
+  <label class="opt"><input type="checkbox" id="evo" checked><span>Digitationen aus dem Editor übernehmen</span></label>
 </div>
-<p class="mut">Eigene Routen sind nicht im Spiel getestet: Ziele sollten zur nächsten Stufe passen (Rookie → Champion …). Teile deine Routen als JSON-Datei.</p>
+<button id="go" class="primary">⬢ Digitieren &amp; speichern</button> <span id="msg"></span>
+</section>
+<details class="card soundtest" id="soundtest"><summary><span class="step">♪</span> Sound-Test <span class="mut">Musik und Effekte aus deiner ROM</span></summary>
+<p class="mut">Hier kannst du alles anhören, was im Spiel steckt, und festlegen, welcher Klang beim Digitieren &amp; Speichern spielt. Die Auswahl wird nur in deinem Browser gemerkt.</p>
+<div class="st-grid"><div><h4>Musik</h4><div id="st-music" class="st-list"></div></div><div><h4>Jingles &amp; Effekte</h4><div id="st-se" class="st-list"></div></div></div>
+</details>
+<p class="mut foot">Eigene Routen sind nicht im Spiel getestet: Ziele sollten zur nächsten Stufe passen (Rookie → Champion …). Teile deine Routen als JSON-Datei. Quellcode und Übersetzungen: <a href="https://github.com/kirides/digital-world-patcher">github.com/kirides/digital-world-patcher</a></p>
 </div>
+</main>
 <div id="pop" class="hide"><input id="popq" placeholder="suchen…"><div id="popl"></div></div>
+<div id="flash" class="hide"></div>
 
 <script src="core.js"></script>
+<script src="sound.js"></script>
 <script src="app.js"></script>
 </body></html>

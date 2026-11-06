@@ -39,6 +39,16 @@
  },
  "games": {
   "ds": {
+   "jingles": [
+    30,
+    31,
+    33
+   ],
+   "digivolveSound": {
+    "seq": 31
+   },
+   "defaultTheme": 0,
+   "music": {},
    "layout": "ds",
    "skSize": 88,
    "nconds": 1,
@@ -606,6 +616,14 @@
    "encounterLabel": "Chibomon (Data Forest) und Veemon (Sheer Valley) als wilde Digimon (Offline)"
   },
   "dawn": {
+   "jingles": [
+    32
+   ],
+   "digivolveSound": {
+    "seq": 32
+   },
+   "defaultTheme": 0,
+   "music": {},
    "layout": "pak",
    "skSize": 112,
    "nconds": 2,
@@ -1680,6 +1698,14 @@
    "encounterLabel": "Version-exklusive Digimon zusätzlich in den Dungeons der anderen Version (Chibomon, Guilmon, Imperialdramon Fighter Mode, Keramon, Kudamon, Kuramon, Moonmon, Piedmon, SkullGreymon, Sunmon, Tsuchidarumon, Tsumemon)"
   },
   "dusk": {
+   "jingles": [
+    32
+   ],
+   "digivolveSound": {
+    "seq": 32
+   },
+   "defaultTheme": 0,
+   "music": {},
    "layout": "pak",
    "skSize": 112,
    "nconds": 2,

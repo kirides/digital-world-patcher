@@ -28,18 +28,25 @@ function valueField(k, c, s) {          // condition c = index into slot (2, 4)
 function renderDetail() {
   const e = st[cur], from = [], nc = G.nconds;
   st.forEach((x, i) => x.s.forEach(s => { if (s && s[0] === cur) from.push(i); }));
-  let h = `<h2>${img(cur, 'big')} ${N(cur)} ${changed(model, st, cur) ? '<small>(geändert)</small>' : ''}</h2>
-  <p class="chips"><b>Entsteht aus:</b> ${from.map(i => `<span data-go="${i}">${img(i)}${N(i)}</span>`).join('') || '<i class="mut">keiner Digitation</i>'}</p>
-  ${(G.encounters || []).filter(x => x[1] === cur).map(x => `<p>🌿 <b>Wild (Mod):</b> ${x[3]} ${$('enc').checked ? '' : '<small class="err">(Häkchen bei den wilden Digimon unter „Patchen“ ist aus)</small>'}</p>`).join('')}
-  <table><tr><th>Digitation zu</th><th>Level</th>${'<th>Bedingung</th><th>Wert</th>'.repeat(nc)}</tr>`;
+  const go = i => `<button class="go" data-go="${i}" title="Zu ${N(i)} wechseln">➜</button>`;
+  const wild = [...(G.encounters || []).filter(x => x[1] === cur).map(x => x[3]),
+    ...(G.wildCopy || []).filter(w => w[2] === cur).map(w => 'zusätzlich in ' + w[0].replace('dat/ec/', ''))];
+  let h = `<div class="mon"><div class="portrait">${ICON[cur] ? `<img src="${ICON[cur]}" alt="">` : ''}</div><div>
+    <h3>${N(cur)}${changed(model, st, cur) ? '<span class="tag">GEÄNDERT</span>' : ''}</h3>
+    <p class="chips"><span class="mut" style="cursor:default">Entsteht aus:</span> ${from.map(i => `<span data-go="${i}">${img(i)}${N(i)}</span>`).join('') || '<i class="mut">keiner Digitation</i>'}</p>
+    ${wild.length ? `<p class="wild">🌿 Wild (Mod): ${wild.join(' · ')} ${$('enc').checked ? '' : '<span class="err">– Häkchen unter „Patchen“ ist aus</span>'}</p>` : ''}
+  </div></div><div class="routes">`;
   e.s.forEach((s, k) => {
-    h += `<tr class="slot"><td>${pickBtn(s ? s[0] : null, `data-k="${k}" data-f="t"`)}${s ? `<button class="go" data-go="${s[0]}" title="Zu ${N(s[0])} wechseln">➜</button>` : ''}</td>`;
-    if (s) { h += `<td><input type="number" min="1" max="99" data-k="${k}" data-f="l" value="${s[1]}"></td>`;
-      for (let c = 2; c < 2 + 2 * nc; c += 2) h += `<td><select data-k="${k}" data-c="${c}" data-f="c">${opts(G.conds.map(x => [x[0], x[1]]), s[c])}</select></td><td>${valueField(k, c, s)}</td>`; }
-    else h += `<td colspan="${1 + 2 * nc}"></td>`;
-    h += '</tr>';
+    h += `<div class="route${s ? '' : ' empty'}"><div class="head">${pickBtn(s ? s[0] : null, `data-k="${k}" data-f="t"`)}${s ? go(s[0]) : ''}</div>`;
+    if (s) {
+      h += `<div class="kv"><span class="lbl">Level ≥</span><input type="number" min="1" max="99" data-k="${k}" data-f="l" value="${s[1]}"></div>`;
+      for (let c = 2; c < 2 + 2 * nc; c += 2)
+        h += `<div class="cond"><select data-k="${k}" data-c="${c}" data-f="c">${opts(G.conds.map(x => [x[0], x[1]]), s[c])}</select>${valueField(k, c, s)}</div>`;
+    } else h += '<span class="mut">freier Platz: Ziel wählen, um eine Route anzulegen</span>';
+    h += '</div>';
   });
-  h += `</table><p class="nw">Degeneriert zu (Return Chip): ${pickBtn(e.p, 'id="prev"')}${e.p !== null ? `<button class="go" data-go="${e.p}" title="Zu ${N(e.p)} wechseln">➜</button>` : ''} <button id="rst">Original für ${N(cur)}</button></p>`;
+  h += `</div><div class="degen"><span class="mut">Degeneriert zu (Return Chip):</span> ${pickBtn(e.p, 'id="prev"')}${e.p !== null ? go(e.p) : ''}
+    <span class="grow"></span><button id="rst" class="ghost">Original für ${N(cur)}</button></div>`;
   $('detail').innerHTML = h;
   const S = () => st[cur].s;
   $('detail').querySelectorAll('[data-k]').forEach(el => {
@@ -58,10 +65,10 @@ function renderDetail() {
 }
 function refresh() {
   const have = reachable(model, st, $('enc').checked), miss = have ? COUNTED.filter(i => !have.has(i)) : [];
-  $('reach').innerHTML = !have ? '<small>Die Prüfung „ohne Tausch erhältlich“ gibt es für dieses Spiel noch nicht.</small>' :
+  $('reach').innerHTML = !have ? '<span class="mut">Die Prüfung „ohne Tausch erhältlich“ gibt es für dieses Spiel noch nicht.</span>' :
     `<b>${COUNTED.length - miss.length} von ${COUNTED.length}</b> Digimon ohne Matching/Tausch erhältlich` +
-    (miss.length ? ' – fehlen:' : ' <span class="ok">✓</span>') + (G.npc && G.npc.length ? ` <small>(nicht gezählt: ${G.npc.map(N).join(', ')}, im Original gar nicht erhältlich)</small>` : '') +
-    (G.reachNote ? ` <small>(${G.reachNote})</small>` : '');
+    (miss.length ? ' – fehlen:' : ' <span class="ok">✓</span>') + (G.npc && G.npc.length ? ` <span class="mut">(nicht gezählt: ${G.npc.map(N).join(', ')}, im Original gar nicht erhältlich)</span>` : '') +
+    (G.reachNote ? ` <span class="mut">(${G.reachNote})</span>` : '');
   $('missing').innerHTML = miss.map(i => `<span data-go="${i}">${img(i)}${N(i)}</span>`).join('');
   $('missing').querySelectorAll('[data-go]').forEach(el => el.onclick = () => { cur = +el.dataset.go; refresh(); });
   const q = $('q').value.toLowerCase(), only = $('onlychg').checked;
@@ -89,7 +96,7 @@ var loadFile = async function (file) {
   $('enclab').classList.toggle('hide', !(G.encounters || G.wildCopy)); $('enc').checked = !!(G.encounters || G.wildCopy); $('enctext').textContent = G.encounterLabel || '';
   const presets = [['orig', 'Original-Routen der ROM'], ...Object.entries(G.presetNames || {})];
   $('preset').innerHTML = opts(presets.reverse(), presets[0][0]);
-  st = presetState(model, $('preset').value); cur = DEX[0]; $('main').classList.remove('hide'); refresh();
+  st = presetState(model, $('preset').value); cur = DEX[0]; $('main').classList.remove('hide'); $('step1').classList.add('loaded'); refresh(); soundSetup();
 };
 $('rom').onchange = e => e.target.files[0] && loadFile(e.target.files[0]);
 const drop = $('drop');
@@ -106,7 +113,7 @@ $('imp').onchange = async e => { try { st = importJSON(model, await e.target.fil
 $('go').onclick = async () => {
   const de = $('de').checked && model.lang === 'en', enc = $('enc').checked && !!(G.encounters || G.wildCopy), evo = $('evo').checked && st.some((x, i) => changed(model, st, i)) ? st : null;
   try {
-    $('msg').textContent = 'Patche …'; $('msg').className = '';
+    $('msg').textContent = 'Patche …'; $('msg').className = ''; digivolveFx();
     const out = patchRom(rom, model, { de, enc, evo }, de ? await germanPatch(model) : null);
     const tags = [(de || model.lang === 'de') && 'Deutsch', (enc || evo) && 'Mod'].filter(Boolean);
     const name = G.title + (tags.length ? ' (' + tags.join(' + ') + ')' : '') + '.nds';
@@ -114,3 +121,37 @@ $('go').onclick = async () => {
     $('msg').textContent = 'Fertig: ' + name; $('msg').className = 'ok';
   } catch (err) { $('msg').textContent = err.message; $('msg').className = 'err'; }
 };
+
+// ---- sound: theme music, digivolve sound, sound test (settings in localStorage, ROM data never stored)
+const SND = { key: k => 'dw-' + k + '-' + (model ? model.game : ''), jingles: [] };
+function soundSetup() {
+  if (!DWSound.load(rom, model.files)) { $('theme').disabled = true; return; }
+  const tracks = DWSound.tracks(), labels = (G.music || {});
+  SND.jingles = (G.jingles || []);
+  const name = n => labels[n] ? labels[n] : 'Stück ' + String(n).padStart(2, '0');
+  $('theme').innerHTML = '<option value="-1">Musik: aus</option>' + tracks.filter(n => !SND.jingles.includes(n)).map(n => `<option value="${n}">♪ ${name(n)}</option>`).join('');
+  $('theme').disabled = false;
+  const saved = localStorage.getItem(SND.key('theme')), def = G.defaultTheme ?? -1;
+  $('theme').value = saved !== null ? saved : def;
+  // sound test lists
+  const evo = JSON.parse(localStorage.getItem(SND.key('evo')) || 'null') || G.digivolveSound || null;
+  const item = (label, which, cls) => `<div class="st-item${JSON.stringify(which) === JSON.stringify(evo) ? ' on' : ''}" data-w='${JSON.stringify(which)}'><span class="nm">${label}</span><button class="ghost" data-a="play">▶</button><button class="ghost" data-a="evo" title="beim Digitieren abspielen">★</button></div>`;
+  $('st-music').innerHTML = tracks.map(n => item(name(n) + (SND.jingles.includes(n) ? ' (Jingle)' : ''), { seq: n })).join('');
+  $('st-se').innerHTML = DWSound.effects().map(n => item('Effekt ' + String(n).padStart(3, '0'), { se: n })).join('');
+  document.querySelectorAll('.st-item').forEach(el => {
+    const w = JSON.parse(el.dataset.w);
+    el.querySelector('[data-a=play]').onclick = () => { if (DWSound.muted) setMuted(false); w.seq !== undefined && !SND.jingles.includes(w.seq) ? ($('theme').value = w.seq, themeChanged()) : DWSound.play1(w); };
+    el.querySelector('[data-a=evo]').onclick = () => { localStorage.setItem(SND.key('evo'), JSON.stringify(w)); document.querySelectorAll('.st-item.on').forEach(x => x.classList.remove('on')); el.classList.add('on'); };
+  });
+  themeChanged();
+}
+function themeChanged() { const n = +$('theme').value; localStorage.setItem(SND.key('theme'), n); DWSound.theme(n); }
+function setMuted(m) { DWSound.setMuted(m); $('mute').textContent = m ? '🔇' : '🔊'; $('mute').title = m ? 'Ton ist aus' : 'Ton ist an'; }
+$('theme').onchange = themeChanged;
+$('mute').onclick = () => setMuted(!DWSound.muted);
+setMuted(DWSound.muted);
+function digivolveFx() {
+  const f = $('flash'); f.classList.remove('hide'); f.style.animation = 'none'; void f.offsetWidth; f.style.animation = ''; setTimeout(() => f.classList.add('hide'), 1300);
+  const w = JSON.parse(localStorage.getItem(SND.key('evo')) || 'null') || G.digivolveSound;
+  if (w) DWSound.play1(w);
+}

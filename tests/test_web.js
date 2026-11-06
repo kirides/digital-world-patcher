@@ -10,6 +10,8 @@ global.DW_META = JSON.parse(fs.readFileSync(path.join(WEB, 'data', 'meta.json'),
 const atob = s => Buffer.from(s, 'base64').toString('binary');
 const api = new Function('atob', 'fetch', core + '; return { loadModel, icon, patchRom, presetState, reachable, exportJSON, importJSON, META, INLINE, b64 };')(atob, null);
 const rd = p => new Uint8Array(fs.readFileSync(p));
+global.localStorage = { getItem: () => null, setItem() {} }; global.document = { addEventListener() {} };
+const SDAT = new Function(fs.readFileSync(path.join(WEB, 'sound.js'), 'utf8') + '; return SDAT;')();
 const eq = (a, b) => a.length === b.length && Buffer.compare(Buffer.from(a), Buffer.from(b)) === 0;
 let ok = true;
 const check = (label, fn, want) => {
@@ -38,6 +40,9 @@ for (const [game, enFile, deName] of games) {
   const u = new Uint32Array(rec.slice().buffer), slot0 = game === 'ds' ? [u[0], u[4]] : [u[1], u[11]];
   check(game + ': edited record encodes target + level', () => slot0, r => r[0] === s0[0] && r[1] === 42);
   check(game + ': JSON round trip', () => api.patchRom(E, mE, { de: false, enc: false, evo: api.importJSON(mE, api.exportJSON(mE, st)) }, null), r => eq(r, out));
+  { const f = mE.files[Object.keys(mE.files).find(p => p.toLowerCase().endsWith('.sdat'))], S = SDAT.open(E.subarray(f[0], f[1])), g = api.META.games[game];
+    const m = SDAT.render(S, { seq: g.defaultTheme }, { maxSec: 240 }), j = SDAT.render(S, g.digivolveSound, { maxSec: 20, loop: false });
+    check(game + `: music renders (${m.seconds.toFixed(0)} s, loop ${m.loopStart !== undefined ? m.loopStart.toFixed(1) + '-' + m.loopEnd.toFixed(1) : 'none'}), digivolve jingle ${j.seconds.toFixed(1)} s`, () => m.peak > 0.05 && j.peak > 0.05 && m.loopEnd > 0, r => r === true); }
   let icons = 0, t0 = Date.now(); for (const x of mE.dex) if (api.icon(E, mE, x)) icons++;
   console.log(`     icons ${icons}/${mE.dex.length} in ${Date.now() - t0} ms`);
   if (game !== 'ds') {
