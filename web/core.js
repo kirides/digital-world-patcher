@@ -2,6 +2,8 @@
 // META (data/meta.json) and INLINE (patches as base64) are only predefined in the single-file build.
 var META = typeof DW_META !== 'undefined' ? DW_META : null;
 var INLINE = typeof DW_INLINE !== 'undefined' ? DW_INLINE : {};
+// texts come from web/i18n/<lang>.json via the page (DW_T); without it (tests) the key itself is used
+function tr(key, vars) { let s = (typeof DW_T === 'function' && DW_T(key)) || key; for (const k in vars || {}) s = s.split('{' + k + '}').join(vars[k]); return s; }
 const FF = 0xFFFFFFFF;
 const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
 function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
@@ -9,12 +11,12 @@ function b64(s) { const b = atob(s), u = new Uint8Array(b.length); for (let i = 
 const hex8 = n => n.toString(16).toUpperCase().padStart(8, '0');
 const dvOf = u8 => new DataView(u8.buffer, u8.byteOffset, u8.length);
 function applyBPS(src, p) {
-  if (String.fromCharCode(p[0], p[1], p[2], p[3]) !== 'BPS1') throw new Error('kein BPS-Patch');
+  if (String.fromCharCode(p[0], p[1], p[2], p[3]) !== 'BPS1') throw new Error(tr('err.notBps'));
   let pos = 4;
   const num = () => { let d = 0, s = 1; for (;;) { const x = p[pos++]; d += (x & 0x7f) * s; if (x & 0x80) return d; s *= 128; d += s; } };
   const ss = num(), ts = num(), ms = num(); pos += ms;
   const dv = dvOf(p), end = p.length - 12;
-  if (src.length !== ss || crc32(src) !== dv.getUint32(end, true)) throw new Error('falsche Quell-ROM');
+  if (src.length !== ss || crc32(src) !== dv.getUint32(end, true)) throw new Error(tr('err.wrongSource'));
   const out = new Uint8Array(ts); let o = 0, sr = 0, tr = 0;
   while (pos < end) {
     const d = num(), act = d % 4, len = Math.floor(d / 4) + 1;
@@ -24,7 +26,7 @@ function applyBPS(src, p) {
       if (act === 2) { sr += off; out.set(src.subarray(sr, sr + len), o); sr += len; o += len; }
       else { tr += off; for (let i = 0; i < len; i++) out[o++] = out[tr++]; } }
   }
-  if (crc32(out) !== dv.getUint32(end + 4, true)) throw new Error('Ergebnis-Prüfsumme falsch');
+  if (crc32(out) !== dv.getUint32(end + 4, true)) throw new Error(tr('err.badResult'));
   return out;
 }
 function ndsFiles(d) {
@@ -101,7 +103,7 @@ function spriteImage(cg, pl, ce) {     // first cell of a sprite -> {w, h, rgba}
 // ---- read everything from the user's ROM. Two layouts: 'ds' (Digimon World DS) and 'pak' (Dawn/Dusk)
 function identify(rom) {
   const crc = crc32(rom), info = META.roms[hex8(crc)];
-  if (!info) throw new Error('Unbekannte ROM (CRC32 ' + hex8(crc) + '). Unterstützt: ' + Object.values(META.roms).filter(r => r.lang === 'en').map(r => META.games[r.game].title + ' (USA, CRC32 ' + r.crc + ')').join(', ') + ', und deren deutsche Fassungen aus diesem Patcher.');
+  if (!info) throw new Error(tr('err.unknown', { crc: hex8(crc), list: Object.values(META.roms).filter(r => r.lang === 'en').map(r => META.games[r.game].title + ' (USA, CRC32 ' + r.crc + ')').join(', ') }));
   return info;
 }
 function loadModel(rom) {
@@ -185,9 +187,9 @@ function encodeRecord(model, st, i) {
 function validate(model, st) {
   const errs = [], N = model.names;
   st.forEach((e, i) => e.s.forEach(s => { if (!s) return;
-    if (!(s[0] >= 0 && s[0] < N.length)) errs.push(N[i] + ': Ziel fehlt');
-    if (!(s[1] >= 1 && s[1] <= 99)) errs.push(N[i] + ': Level 1-99');
-    if (s.slice(2).some(v => !(v >= 0 && v <= 0xFFFFFFFF))) errs.push(N[i] + ': Wert ungültig'); }));
+    if (!(s[0] >= 0 && s[0] < N.length)) errs.push(tr('err.target', { name: N[i] }));
+    if (!(s[1] >= 1 && s[1] <= 99)) errs.push(tr('err.level', { name: N[i] }));
+    if (s.slice(2).some(v => !(v >= 0 && v <= 0xFFFFFFFF))) errs.push(tr('err.value', { name: N[i] })); }));
   return errs;
 }
 function reachable(model, st, withEnc) {   // only for games with known offline sources
@@ -214,7 +216,7 @@ function encounterEdits(model) {     // DS only, same rule as offline.py
       let big = used[0]; for (const s of used) if (u[3 + 6 * s] > u[3 + 6 * big]) big = s;
       if (u[3 + 6 * big] <= chance) continue;
       u[3 + 6 * big] -= chance; const nw = used.length;
-      if (used.includes(nw)) throw new Error('unerwartetes Begegnungs-Layout in ' + path);
+      if (used.includes(nw)) throw new Error(tr('err.file', { file: path }));
       u.set([chance, 0xFFFF, 0xFFFF, sp, 0xFFFF, 0xFFFF], 3 + 6 * nw);
     }
     if (u.join() !== before) out.push([path, off, new Uint8Array(u.buffer)]);
@@ -226,9 +228,9 @@ function wildCopyFiles(model, d, files) {   // Dawn/Dusk: same as tools/mod.py w
   for (const [to, from, sp] of G_(model).wildCopy || []) {
     const src = get(from), n = dvOf(src).getUint16(0, true); let e = null;
     for (let k = 0; k < n; k++) if (dvOf(src).getUint16(16 + 24 * k, true) === sp) { e = src.slice(16 + 24 * k, 40 + 24 * k); break; }
-    if (!e) throw new Error('Digimon ' + sp + ' fehlt in ' + from);
+    if (!e) throw new Error(tr('err.file', { file: from }));
     const dst = get(to), m = dvOf(dst).getUint16(0, true), end = 16 + 24 * m;
-    if (dst.length !== end + 4) throw new Error('unerwartetes Format: ' + to);
+    if (dst.length !== end + 4) throw new Error(tr('err.file', { file: to }));
     const nb = new Uint8Array(dst.length + 24); nb.set(dst.subarray(0, end)); nb.set(e, end); nb.set(dst.subarray(end), end + 24);
     dvOf(nb).setUint16(0, m + 1, true); out[to] = nb;
   }
@@ -243,27 +245,27 @@ function writeFiles(d, files, list) {   // same algorithm as tools/ndsfs.py buil
   for (const [p, blob] of list) {
     const i = ids[p], s = dv.getUint32(fat + 8 * i, true), e = dv.getUint32(fat + 8 * i + 4, true);
     if (blob.length <= e - s) { d.set(blob, s); dv.setUint32(fat + 8 * i + 4, s + blob.length, true); }
-    else { if (end + blob.length > d.length) throw new Error('ROM ist voll');
+    else { if (end + blob.length > d.length) throw new Error(tr('err.full'));
       d.fill(0xFF, end); d.set(blob, end); dv.setUint32(fat + 8 * i, end, true); dv.setUint32(fat + 8 * i + 4, end + blob.length, true);
       end = (end + blob.length + 0x1FF) & ~0x1FF; }
   }
   let used = 0; for (let i = 0; i < fsz; i++) used = Math.max(used, dv.getUint32(fat + 8 * i + 4, true));
   dv.setUint32(0x80, used, true); dv.setUint16(0x15E, crc16(d, 0x15E), true);
 }
-function patchRom(rom, model, opt, bps) {  // opt: {de, enc, evo: state|null}; bps: German patch bytes when opt.de
-  if (model.lang === 'de' && opt.de) throw new Error('Diese ROM ist schon übersetzt: Häkchen bei „Deutsch“ entfernen.');
-  const out = opt.de ? applyBPS(rom, bps) : rom.slice();
-  const f = ndsFiles(out), put = (path, off, bytes) => { const [s, e] = f[path]; if (s + off + bytes.length > e) throw new Error('unerwartete Datei ' + path); out.set(bytes, s + off); };
+function patchRom(rom, model, opt, bps) {  // opt: {tr: language code|null, enc, evo: state|null}; bps: that translation patch
+  if (model.lang !== 'en' && opt.tr) throw new Error(tr('err.already'));
+  const out = opt.tr ? applyBPS(rom, bps) : rom.slice();
+  const f = ndsFiles(out), put = (path, off, bytes) => { const [s, e] = f[path]; if (s + off + bytes.length > e) throw new Error(tr('err.file', { file: path })); out.set(bytes, s + off); };
   if (opt.enc) for (const [p, o, b] of encounterEdits(model)) put(p, o, b);
   if (opt.evo) { const errs = validate(model, opt.evo); if (errs.length) throw new Error(errs.slice(0, 5).join('\n'));
     opt.evo.forEach((e, i) => { if (changed(model, opt.evo, i)) put(model.sk[i].path, model.sk[i].off, encodeRecord(model, opt.evo, i)); }); }
   if (opt.enc && G_(model).wildCopy) writeFiles(out, f, Object.entries(wildCopyFiles(model, out, f)));
   return out;
 }
-async function germanPatch(model) {
-  const name = model.info.patch;
+async function translationPatch(model, lang) {   // patches/<file>.bps for the loaded game, or inlined in the single-file build
+  const name = G_(model).translations[lang].patch;
   if (INLINE[name]) return b64(INLINE[name]);
-  const r = await fetch('patches/' + encodeURIComponent(name)); if (!r.ok) throw new Error('Patch nicht gefunden: ' + name);
+  const r = await fetch('patches/' + encodeURIComponent(name)); if (!r.ok) throw new Error(tr('err.patch', { file: name }));
   return new Uint8Array(await r.arrayBuffer());
 }
 function exportJSON(model, st) {
@@ -273,10 +275,10 @@ function exportJSON(model, st) {
 }
 function importJSON(model, text) {   // applied on top of the ROM's own table
   const j = JSON.parse(text);
-  if (j.format !== 'dw-digivolution' && j.format !== 'dwds-digivolution') throw new Error('keine Digitations-Datei');
-  const game = j.game || 'ds'; if (game !== model.game) throw new Error('Datei ist für ' + META.games[game].title + ', geladen ist ' + G_(model).title);
+  if (j.format !== 'dw-digivolution' && j.format !== 'dwds-digivolution') throw new Error(tr('err.json'));
+  const game = j.game || 'ds'; if (game !== model.game) throw new Error(tr('err.jsonGame', { file: META.games[game].title, game: G_(model).title }));
   const st = clone(model.evo);
-  for (const [id, r] of Object.entries(j.routes)) { if (!st[id]) throw new Error('unbekannte Nummer ' + id);
-    if (!Array.isArray(r.s) || r.s.length !== 3) throw new Error('Format bei ' + id); st[id].s = r.s; st[id].p = r.p ?? null; }
+  for (const [id, r] of Object.entries(j.routes)) { if (!st[id]) throw new Error(tr('err.jsonId', { id }));
+    if (!Array.isArray(r.s) || r.s.length !== 3) throw new Error(tr('err.jsonFormat', { id })); st[id].s = r.s; st[id].p = r.p ?? null; }
   return st;
 }

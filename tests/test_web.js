@@ -29,17 +29,17 @@ for (const [game, enFile, deName] of games) {
   const mE = api.loadModel(E), mD = api.loadModel(D), orig = api.presetState(mE, 'orig');
   console.log(`== ${game}: ${mE.names.length} records, ${mE.dex.length} Digimon, e.g. ${mE.dex.slice(0, 4).map(i => mE.names[i]).join(', ')}`);
   check(game + ': EN and DE ROM read the same routes', () => JSON.stringify(mE.evo) === JSON.stringify(mD.evo) && JSON.stringify(mE.dex) === JSON.stringify(mD.dex), r => r === true);
-  check(game + ': EN -> Deutsch', () => api.patchRom(E, mE, { de: true, enc: false, evo: null }, bpsOf(mE)), deFile);
-  check(game + ': Original preset changes nothing', () => api.patchRom(E, mE, { de: true, enc: false, evo: orig }, bpsOf(mE)), deFile);
-  check(game + ': Deutsch + Deutsch is refused', () => api.patchRom(D, mD, { de: true }, null), /schon/);
+  check(game + ': EN -> Deutsch', () => api.patchRom(E, mE, { tr: 'de', enc: false, evo: null }, bpsOf(mE)), deFile);
+  check(game + ': Original preset changes nothing', () => api.patchRom(E, mE, { tr: 'de', enc: false, evo: orig }, bpsOf(mE)), deFile);
+  check(game + ': Deutsch + Deutsch is refused', () => api.patchRom(D, mD, { tr: 'de' }, null), /err.already/);
   // edit round trip: change the first route of the first Digimon that has one, patch, read back
   const st = api.presetState(mE, 'orig'), i = mE.dex.find(x => st[x].s[0]), s0 = st[i].s[0];
   st[i].s[0] = [s0[0], 42, ...s0.slice(2)]; st[i].s[1] = st[i].s[1] || [mE.dex[5], 33, ...Array(s0.length - 2).fill(0)];
-  const out = api.patchRom(E, mE, { de: false, enc: false, evo: st }, null);
+  const out = api.patchRom(E, mE, { tr: null, enc: false, evo: st }, null);
   const rec = out.slice(...(() => { const fl = mE.files[mE.sk[i].path]; return [fl[0] + mE.sk[i].off, fl[0] + mE.sk[i].off + mE.sk[i].rec.length]; })());
   const u = new Uint32Array(rec.slice().buffer), slot0 = game === 'ds' ? [u[0], u[4]] : [u[1], u[11]];
   check(game + ': edited record encodes target + level', () => slot0, r => r[0] === s0[0] && r[1] === 42);
-  check(game + ': JSON round trip', () => api.patchRom(E, mE, { de: false, enc: false, evo: api.importJSON(mE, api.exportJSON(mE, st)) }, null), r => eq(r, out));
+  check(game + ': JSON round trip', () => api.patchRom(E, mE, { tr: null, enc: false, evo: api.importJSON(mE, api.exportJSON(mE, st)) }, null), r => eq(r, out));
   { const f = mE.files[Object.keys(mE.files).find(p => p.toLowerCase().endsWith('.sdat'))], S = SDAT.open(E.subarray(f[0], f[1])), g = api.META.games[game];
     const m = SDAT.render(S, { seq: g.defaultTheme }, { maxSec: 240 }), j = SDAT.render(S, g.digivolveSound, { maxSec: 20, loop: false });
     check(game + `: music renders (${m.seconds.toFixed(0)} s, loop ${m.loopStart !== undefined ? m.loopStart.toFixed(1) + '-' + m.loopEnd.toFixed(1) : 'none'}), digivolve jingle ${j.seconds.toFixed(1)} s`, () => m.peak > 0.05 && j.peak > 0.05 && m.loopEnd > 0, r => r === true); }
@@ -47,9 +47,9 @@ for (const [game, enFile, deName] of games) {
   console.log(`     icons ${icons}/${mE.dex.length} in ${Date.now() - t0} ms`);
   if (game !== 'ds') {
     const G = game[0].toUpperCase() + game.slice(1), off = api.presetState(mE, 'dawn-dusk-offline'), offD = api.presetState(mD, 'dawn-dusk-offline');
-    check(game + ': EN -> Offline (= tools/mod.py)', () => api.patchRom(E, mE, { de: false, enc: true, evo: off }, null), path.join(scratch, G + '_off.nds'));
-    check(game + ': EN -> Deutsch + Offline', () => api.patchRom(E, mE, { de: true, enc: true, evo: off }, bpsOf(mE)), path.join(scratch, G + '_de_off.nds'));
-    check(game + ': Deutsch -> Offline', () => api.patchRom(D, mD, { de: false, enc: true, evo: offD }, null), path.join(scratch, G + '_de_off.nds'));
+    check(game + ': EN -> Offline (= tools/mod.py)', () => api.patchRom(E, mE, { tr: null, enc: true, evo: off }, null), path.join(scratch, G + '_off.nds'));
+    check(game + ': EN -> Deutsch + Offline', () => api.patchRom(E, mE, { tr: 'de', enc: true, evo: off }, bpsOf(mE)), path.join(scratch, G + '_de_off.nds'));
+    check(game + ': Deutsch -> Offline', () => api.patchRom(D, mD, { tr: null, enc: true, evo: offD }, null), path.join(scratch, G + '_de_off.nds'));
     for (const [label, s, enc] of [['Original', orig, false], ['Offline', off, true]]) {
       const h = api.reachable(mE, s, enc), miss = mE.dex.filter(x => !h.has(x));
       console.log(`     ${label}: ${mE.dex.length - miss.length}/${mE.dex.length} without trading; missing: ${miss.map(x => mE.names[x]).join(', ')}`);
@@ -57,14 +57,14 @@ for (const [game, enFile, deName] of games) {
   }
   if (game === 'ds') {
     const off = api.presetState(mE, 'ds-offline');
-    check('ds: EN -> Offline', () => api.patchRom(E, mE, { de: false, enc: true, evo: off }, null), path.join(rel, 'offline', 'Digimon World DS (Offline).nds'));
-    check('ds: EN -> Deutsch + Offline', () => api.patchRom(E, mE, { de: true, enc: true, evo: off }, bpsOf(mE)), path.join(rel, 'de_offline', 'Digimon World DS (Deutsch + Offline).nds'));
-    check('ds: Deutsch -> Offline', () => api.patchRom(D, mD, { de: false, enc: true, evo: api.presetState(mD, 'ds-offline') }, null), path.join(rel, 'de_offline', 'Digimon World DS (Deutsch + Offline).nds'));
+    check('ds: EN -> Offline', () => api.patchRom(E, mE, { tr: null, enc: true, evo: off }, null), path.join(rel, 'offline', 'Digimon World DS (Offline).nds'));
+    check('ds: EN -> Deutsch + Offline', () => api.patchRom(E, mE, { tr: 'de', enc: true, evo: off }, bpsOf(mE)), path.join(rel, 'de_offline', 'Digimon World DS (Deutsch + Offline).nds'));
+    check('ds: Deutsch -> Offline', () => api.patchRom(D, mD, { tr: null, enc: true, evo: api.presetState(mD, 'ds-offline') }, null), path.join(rel, 'de_offline', 'Digimon World DS (Deutsch + Offline).nds'));
     const dex = mE.dex.filter(x => !api.META.games.ds.npc.includes(x));
     for (const [label, s, enc] of [['Original', orig, false], ['Offline', off, true]]) {
       const h = api.reachable(mE, s, enc); console.log(`     ${label}: ${dex.filter(x => h.has(x)).length}/${dex.length} without matching`);
     }
   }
 }
-check('wrong ROM is refused', () => api.loadModel(rd(path.join(romDir, 'Digimon World DS.nds')).slice(0, 1 << 20)), /Unbekannte/);
+check('wrong ROM is refused', () => api.loadModel(rd(path.join(romDir, 'Digimon World DS.nds')).slice(0, 1 << 20)), /err.unknown/);
 process.exit(ok ? 0 : 1);

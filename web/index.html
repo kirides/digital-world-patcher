@@ -1,61 +1,63 @@
 <!DOCTYPE html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Digital World Patcher · Digimon World DS, Dawn, Dusk</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title data-i18n="meta.title">Digital World Patcher · Digimon World DS, Dawn, Dusk</title>
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 3 58 18v28L32 61 6 46V18z' fill='%23ff8a1f'/%3E%3Crect x='17' y='19' width='30' height='22' rx='4' fill='%230b1a33'/%3E%3Cpath d='M22 34l6-8 5 5 4-6 5 9' stroke='%2337e0ff' stroke-width='3' fill='none'/%3E%3C/svg%3E">
 </head><body>
+<!-- texts: data-i18n (content), data-i18n-title, data-i18n-ph (placeholder) -> web/i18n/<lang>.json -->
 <header class="top">
   <div class="brand">
     <svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 3 58 18v28L32 61 6 46V18z" class="lg-shell"/><path d="M32 9 52 20.5v23L32 55 12 43.5v-23z" class="lg-ring"/><rect x="18" y="20" width="28" height="20" rx="3" class="lg-screen"/><path d="M22 34l6-8 5 5 4-6 5 9" class="lg-wave"/><circle cx="32" cy="48" r="3" class="lg-btn"/></svg>
-    <div><h1>Digital World Patcher</h1><p class="sub">Digimon World DS · Dawn · Dusk — Übersetzung &amp; Digitations-Editor</p></div>
+    <div><h1>Digital World Patcher</h1><p class="sub" data-i18n="head.sub"></p></div>
   </div>
-  <div class="sound" id="soundbar" title="Musik und Effekte aus deiner ROM">
-    <button id="mute" class="icon-btn" aria-label="Ton an/aus">🔇</button>
-    <input id="vol" type="range" min="0" max="1" step="0.05" title="Musik-Lautstärke (Digitier-Sound: 50 %)" aria-label="Musik-Lautstärke">
-    <select id="theme" disabled><option>Musik: ROM laden</option></select>
-    <a class="gh" href="https://github.com/kirides/digital-world-patcher" title="Quellcode auf GitHub" aria-label="GitHub-Repository"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a>
+  <div class="sound" id="soundbar">
+    <button id="mute" class="icon-btn" data-i18n-title="head.mute">🔇</button>
+    <input id="vol" type="range" min="0" max="1" step="0.05" data-i18n-title="head.volume">
+    <select id="theme" disabled><option data-i18n="head.music"></option></select>
+    <select id="lang" data-i18n-title="head.lang"></select>
+    <a class="gh" href="https://github.com/kirides/digital-world-patcher" data-i18n-title="head.github"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span>GitHub</span></a>
   </div>
 </header>
 
 <main>
-<p class="lead">Alles läuft lokal in deinem Browser. Deine ROM wird nirgendwohin hochgeladen. <span class="mut">Everything runs locally; nothing is uploaded.</span></p>
+<p class="lead" data-i18n="lead"></p>
 
-<section class="card" id="step1"><h2><span class="step">1</span> ROM laden</h2>
-<div id="drop"><div class="drop-ico">⬢</div><p>Ziehe deine ROM hierher oder <label class="link">wähle sie aus<input type="file" id="rom" accept=".nds" hidden></label></p>
-<p class="mut">Digimon World DS, Dawn oder Dusk (USA) — oder deren deutsche Fassung aus diesem Patcher. Das Spiel wird an der Prüfsumme erkannt.</p><p id="msg1"></p></div>
+<section class="card" id="step1"><h2><span class="step">1</span> <span data-i18n="s1.title"></span></h2>
+<div id="drop"><div class="drop-ico">⬢</div><p><span data-i18n="s1.drop"></span> <label class="link"><span data-i18n="s1.choose"></span><input type="file" id="rom" accept=".nds" hidden></label></p>
+<p class="mut" data-i18n="s1.hint"></p><p id="msg1"></p></div>
 </section>
 
 <div id="main" class="hide">
-<section class="card"><h2><span class="step">2</span> Digitationen <span class="mut">aus deiner ROM gelesen</span></h2>
+<section class="card"><h2><span class="step">2</span> <span data-i18n="s2.title"></span> <span class="mut" data-i18n="s2.sub"></span></h2>
 <div class="toolbar">
-  <label class="field">Vorlage <select id="preset"></select></label>
-  <button id="apply">Vorlage laden</button>
+  <label class="field"><span data-i18n="s2.preset"></span> <select id="preset"></select></label>
+  <button id="apply" data-i18n="s2.apply"></button>
   <span class="grow"></span>
-  <button id="exp" class="ghost">Export JSON</button> <button id="impb" class="ghost">Import JSON</button><input type="file" id="imp" accept=".json" hidden>
+  <button id="exp" class="ghost" data-i18n="s2.export"></button> <button id="impb" class="ghost" data-i18n="s2.import"></button><input type="file" id="imp" accept=".json" hidden>
 </div>
 <div class="reach"><p id="reach"></p><p id="missing" class="chips"></p></div>
 <div id="ed">
-  <div class="side"><input id="q" placeholder="Digimon suchen…"><label class="chk"><input type="checkbox" id="onlychg"> nur geänderte</label><div id="list"></div></div>
+  <div class="side"><input id="q" data-i18n-ph="s2.search"><label class="chk"><input type="checkbox" id="onlychg"> <span data-i18n="s2.onlyChanged"></span></label><div id="list"></div></div>
   <div id="detail"></div>
 </div>
 </section>
 
-<section class="card"><h2><span class="step">3</span> Patchen</h2>
+<section class="card"><h2><span class="step">3</span> <span data-i18n="s3.title"></span></h2>
 <div class="opts">
-  <label id="delab" class="opt"><input type="checkbox" id="de" checked><span>Deutsche Übersetzung</span></label>
+  <div id="trbox" class="opts"></div>
   <label id="enclab" class="opt"><input type="checkbox" id="enc" checked><span id="enctext"></span></label>
-  <label class="opt"><input type="checkbox" id="evo" checked><span>Digitationen aus dem Editor übernehmen</span></label>
+  <label class="opt"><input type="checkbox" id="evo" checked><span data-i18n="s3.evo"></span></label>
 </div>
-<button id="go" class="primary">⬢ Digitieren &amp; speichern</button> <span id="msg"></span>
+<button id="go" class="primary" data-i18n="s3.go"></button> <span id="msg"></span>
 </section>
-<details class="card soundtest" id="soundtest"><summary><span class="step">♪</span> Sound-Test <span class="mut">Musik und Effekte aus deiner ROM</span></summary>
-<p class="mut">Hier kannst du alles anhören, was im Spiel steckt, und festlegen, welcher Klang beim Digitieren &amp; Speichern spielt. Die Auswahl wird nur in deinem Browser gemerkt.</p>
-<div class="st-grid"><div><h4>Musik</h4><div id="st-music" class="st-list"></div></div><div><h4>Jingles &amp; Effekte</h4><div id="st-se" class="st-list"></div></div></div>
+<details class="card soundtest" id="soundtest"><summary><span class="step">♪</span> <span data-i18n="st.title"></span> <span class="mut" data-i18n="st.sub"></span></summary>
+<p class="mut" data-i18n="st.hint"></p>
+<div class="st-grid"><div><h4 data-i18n="st.music"></h4><div id="st-music" class="st-list"></div></div><div><h4 data-i18n="st.se"></h4><div id="st-se" class="st-list"></div></div></div>
 </details>
-<p class="mut foot">Eigene Routen sind nicht im Spiel getestet: Ziele sollten zur nächsten Stufe passen (Rookie → Champion …). Teile deine Routen als JSON-Datei. Quellcode und Übersetzungen: <a href="https://github.com/kirides/digital-world-patcher">github.com/kirides/digital-world-patcher</a></p>
+<p class="mut foot"><span data-i18n="foot"></span> <a href="https://github.com/kirides/digital-world-patcher">github.com/kirides/digital-world-patcher</a></p>
 </div>
 </main>
-<div id="pop" class="hide"><input id="popq" placeholder="suchen…"><div id="popl"></div></div>
+<div id="pop" class="hide"><input id="popq" data-i18n-ph="ed.search"><div id="popl"></div></div>
 <div id="flash" class="hide"></div>
 
 <script src="core.js"></script>

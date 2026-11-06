@@ -55,112 +55,112 @@
    "conds": [
     [
      0,
-     "keine",
+     "cond.0",
      1
     ],
     [
      2,
-     "Drachen-EP ≥",
+     "cond.exp.dragon",
      10
     ],
     [
      3,
-     "Tier-EP ≥",
+     "cond.exp.beast",
      10
     ],
     [
      4,
-     "Wasser-EP ≥",
+     "cond.exp.aquan",
      10
     ],
     [
      5,
-     "Vogel-EP ≥",
+     "cond.exp.bird",
      10
     ],
     [
      6,
-     "Insekt-EP ≥",
+     "cond.exp.insect",
      10
     ],
     [
      7,
-     "Maschinen-EP ≥",
+     "cond.exp.machine",
      10
     ],
     [
      8,
-     "Dunkel-EP ≥",
+     "cond.exp.dark",
      10
     ],
     [
      9,
-     "Heilig-EP ≥",
+     "cond.exp.holy",
      10
     ],
     [
      10,
-     "Gesamt-EP ≥",
+     "cond.exp.total",
      10
     ],
     [
      11,
-     "Angriff ≥",
+     "cond.atk",
      1
     ],
     [
      12,
-     "Verteidigung ≥",
+     "cond.def",
      1
     ],
     [
      13,
-     "Geist ≥",
+     "cond.spi",
      1
     ],
     [
      14,
-     "Begabung ≥",
+     "cond.apt",
      1
     ],
     [
      15,
-     "Stress ≥ %",
+     "cond.stressMin",
      1
     ],
     [
      16,
-     "Stress ≤ %",
+     "cond.stressMax",
      1
     ],
     [
      17,
-     "Freundschaft ≥ %",
+     "cond.friendMin",
      1
     ],
     [
      18,
-     "Freundschaft ≤ %",
+     "cond.friendMax",
      1
     ],
     [
      19,
-     "hat Gegenstand",
+     "cond.item",
      "item"
     ],
     [
      20,
-     "hat Digimon im Team",
+     "cond.party",
      "species"
     ],
     [
      21,
-     "hat Digimon befreundet",
+     "cond.befriended",
      "species"
     ],
     [
      23,
-     "Spielzeit ≥ Std.",
+     "cond.hours",
      1
     ]
    ],
@@ -525,6 +525,12 @@
     "498": "Miracle DM"
    },
    "title": "Digimon World DS",
+   "translations": {
+    "de": {
+     "patch": "Digimon World DS (Deutsch).bps",
+     "name": "Deutsch"
+    }
+   },
    "presets": {
     "ds-offline": {
      "71": {
@@ -588,7 +594,10 @@
     }
    },
    "presetNames": {
-    "ds-offline": "Offline: alle Digimon ohne Matching"
+    "ds-offline": {
+     "de": "Offline: alle Digimon ohne Matching",
+     "en": "Offline: every Digimon without matching"
+    }
    },
    "encounters": [
     [
@@ -597,7 +606,7 @@
      ],
      9,
      800,
-     "Data Forest, 8 % der Begegnungen"
+     "Data Forest"
     ],
     [
      [
@@ -610,10 +619,13 @@
      ],
      13,
      800,
-     "Sheer Valley, 8 % der Begegnungen"
+     "Sheer Valley"
     ]
    ],
-   "encounterLabel": "Chibomon (Data Forest) und Veemon (Sheer Valley) als wilde Digimon (Offline)"
+   "encounterLabel": {
+    "de": "Chibomon (Data Forest) und Veemon (Sheer Valley) als wilde Digimon",
+    "en": "Chibomon (Data Forest) and Veemon (Sheer Valley) as wild Digimon"
+   }
   },
   "dawn": {
    "jingles": [
@@ -630,92 +642,92 @@
    "conds": [
     [
      0,
-     "keine",
+     "cond.0",
      1
     ],
     [
      2,
-     "Drachen-EP ≥",
+     "cond.exp.dragon",
      1
     ],
     [
      3,
-     "Tier-EP ≥",
+     "cond.exp.beast",
      1
     ],
     [
      4,
-     "Wasser-EP ≥",
+     "cond.exp.aquan",
      1
     ],
     [
      5,
-     "Vogel-EP ≥",
+     "cond.exp.bird",
      1
     ],
     [
      6,
-     "Insekt-EP ≥",
+     "cond.exp.insect",
      1
     ],
     [
      7,
-     "Maschinen-EP ≥",
+     "cond.exp.machine",
      1
     ],
     [
      8,
-     "Dunkel-EP ≥",
+     "cond.exp.dark",
      1
     ],
     [
      9,
-     "Heilig-EP ≥",
+     "cond.exp.holy",
      1
     ],
     [
      10,
-     "Gesamt-EP ≥",
+     "cond.exp.total",
      1
     ],
     [
      11,
-     "Angriff ≥",
+     "cond.atk",
      1
     ],
     [
      12,
-     "Verteidigung ≥",
+     "cond.def",
      1
     ],
     [
      13,
-     "Geist ≥",
+     "cond.spi",
      1
     ],
     [
      14,
-     "Tempo ≥",
+     "cond.spd",
      1
     ],
     [
      15,
-     "Begabung ≥",
+     "cond.apt",
      1
     ],
     [
      18,
-     "Freundschaft ≥ %",
+     "cond.friendMin",
      1
     ],
     [
      21,
-     "hat Digimon im Team",
+     "cond.party",
      "species"
     ],
     [
      22,
-     "hat Digimon befreundet",
+     "cond.befriended",
      "species"
     ]
    ],
@@ -1128,8 +1140,14 @@
     "dat/ec/e072.bin",
     "dat/ec/e073.bin"
    ],
-   "reachNote": "ohne DNA-Digitation, Eier und Passwörter gerechnet",
+   "reachNote": "reach.notePak",
    "title": "Digimon World Dawn",
+   "translations": {
+    "de": {
+     "patch": "Digimon World Dawn (Deutsch).bps",
+     "name": "Deutsch"
+    }
+   },
    "presets": {
     "dawn-dusk-offline": {
      "66": {
@@ -1631,7 +1649,10 @@
     }
    },
    "presetNames": {
-    "dawn-dusk-offline": "Offline: alle Digimon ohne Tausch"
+    "dawn-dusk-offline": {
+     "de": "Offline: alle Digimon ohne Tausch",
+     "en": "Offline: every Digimon without trading"
+    }
    },
    "wildCopy": [
     [
@@ -1695,7 +1716,10 @@
      418
     ]
    ],
-   "encounterLabel": "Version-exklusive Digimon zusätzlich in den Dungeons der anderen Version (Chibomon, Guilmon, Imperialdramon Fighter Mode, Keramon, Kudamon, Kuramon, Moonmon, Piedmon, SkullGreymon, Sunmon, Tsuchidarumon, Tsumemon)"
+   "encounterLabel": {
+    "de": "Version-exklusive Digimon zusätzlich in den Dungeons der anderen Version (Chibomon, Guilmon, Imperialdramon Fighter Mode, Keramon, Kudamon, Kuramon, Moonmon, Piedmon, SkullGreymon, Sunmon, Tsuchidarumon, Tsumemon)",
+    "en": "Version-exclusive Digimon also in the other version's dungeons (Chibomon, Guilmon, Imperialdramon Fighter Mode, Keramon, Kudamon, Kuramon, Moonmon, Piedmon, SkullGreymon, Sunmon, Tsuchidarumon, Tsumemon)"
+   }
   },
   "dusk": {
    "jingles": [
@@ -1712,92 +1736,92 @@
    "conds": [
     [
      0,
-     "keine",
+     "cond.0",
      1
     ],
     [
      2,
-     "Drachen-EP ≥",
+     "cond.exp.dragon",
      1
     ],
     [
      3,
-     "Tier-EP ≥",
+     "cond.exp.beast",
      1
     ],
     [
      4,
-     "Wasser-EP ≥",
+     "cond.exp.aquan",
      1
     ],
     [
      5,
-     "Vogel-EP ≥",
+     "cond.exp.bird",
      1
     ],
     [
      6,
-     "Insekt-EP ≥",
+     "cond.exp.insect",
      1
     ],
     [
      7,
-     "Maschinen-EP ≥",
+     "cond.exp.machine",
      1
     ],
     [
      8,
-     "Dunkel-EP ≥",
+     "cond.exp.dark",
      1
     ],
     [
      9,
-     "Heilig-EP ≥",
+     "cond.exp.holy",
      1
     ],
     [
      10,
-     "Gesamt-EP ≥",
+     "cond.exp.total",
      1
     ],
     [
      11,
-     "Angriff ≥",
+     "cond.atk",
      1
     ],
     [
      12,
-     "Verteidigung ≥",
+     "cond.def",
      1
     ],
     [
      13,
-     "Geist ≥",
+     "cond.spi",
      1
     ],
     [
      14,
-     "Tempo ≥",
+     "cond.spd",
      1
     ],
     [
      15,
-     "Begabung ≥",
+     "cond.apt",
      1
     ],
     [
      18,
-     "Freundschaft ≥ %",
+     "cond.friendMin",
      1
     ],
     [
      21,
-     "hat Digimon im Team",
+     "cond.party",
      "species"
     ],
     [
      22,
-     "hat Digimon befreundet",
+     "cond.befriended",
      "species"
     ]
    ],
@@ -2237,8 +2261,14 @@
     "dat/ec/e071.bin",
     "dat/ec/e073.bin"
    ],
-   "reachNote": "ohne DNA-Digitation, Eier und Passwörter gerechnet",
+   "reachNote": "reach.notePak",
    "title": "Digimon World Dusk",
+   "translations": {
+    "de": {
+     "patch": "Digimon World Dusk (Deutsch).bps",
+     "name": "Deutsch"
+    }
+   },
    "presets": {
     "dawn-dusk-offline": {
      "66": {
@@ -2740,7 +2770,10 @@
     }
    },
    "presetNames": {
-    "dawn-dusk-offline": "Offline: alle Digimon ohne Tausch"
+    "dawn-dusk-offline": {
+     "de": "Offline: alle Digimon ohne Tausch",
+     "en": "Offline: every Digimon without trading"
+    }
    },
    "wildCopy": [
     [
@@ -2804,7 +2837,14 @@
      418
     ]
    ],
-   "encounterLabel": "Version-exklusive Digimon zusätzlich in den Dungeons der anderen Version (Chibomon, Guilmon, Imperialdramon Fighter Mode, Keramon, Kudamon, Kuramon, Moonmon, Piedmon, SkullGreymon, Sunmon, Tsuchidarumon, Tsumemon)"
+   "encounterLabel": {
+    "de": "Version-exklusive Digimon zusätzlich in den Dungeons der anderen Version (Chibomon, Guilmon, Imperialdramon Fighter Mode, Keramon, Kudamon, Kuramon, Moonmon, Piedmon, SkullGreymon, Sunmon, Tsuchidarumon, Tsumemon)",
+    "en": "Version-exclusive Digimon also in the other version's dungeons (Chibomon, Guilmon, Imperialdramon Fighter Mode, Keramon, Kudamon, Kuramon, Moonmon, Piedmon, SkullGreymon, Sunmon, Tsuchidarumon, Tsumemon)"
+   }
   }
+ },
+ "languages": {
+  "de": "Deutsch",
+  "en": "English"
  }
 }

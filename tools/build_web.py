@@ -56,16 +56,16 @@ def species_names(nds):
     return names
 
 
-CONDS_DS = [[0, 'keine', 1], [2, 'Drachen-EP ≥', 10], [3, 'Tier-EP ≥', 10], [4, 'Wasser-EP ≥', 10], [5, 'Vogel-EP ≥', 10],
-    [6, 'Insekt-EP ≥', 10], [7, 'Maschinen-EP ≥', 10], [8, 'Dunkel-EP ≥', 10], [9, 'Heilig-EP ≥', 10], [10, 'Gesamt-EP ≥', 10],
-    [11, 'Angriff ≥', 1], [12, 'Verteidigung ≥', 1], [13, 'Geist ≥', 1], [14, 'Begabung ≥', 1], [15, 'Stress ≥ %', 1],
-    [16, 'Stress ≤ %', 1], [17, 'Freundschaft ≥ %', 1], [18, 'Freundschaft ≤ %', 1], [19, 'hat Gegenstand', 'item'],
-    [20, 'hat Digimon im Team', 'species'], [21, 'hat Digimon befreundet', 'species'], [23, 'Spielzeit ≥ Std.', 1]]
-# Dawn/Dusk: values are stored as shown in game (no /10); checked against StrategyWiki's requirement tables
-CONDS_PAK = [[0, 'keine', 1], [2, 'Drachen-EP ≥', 1], [3, 'Tier-EP ≥', 1], [4, 'Wasser-EP ≥', 1], [5, 'Vogel-EP ≥', 1],
-    [6, 'Insekt-EP ≥', 1], [7, 'Maschinen-EP ≥', 1], [8, 'Dunkel-EP ≥', 1], [9, 'Heilig-EP ≥', 1], [10, 'Gesamt-EP ≥', 1],
-    [11, 'Angriff ≥', 1], [12, 'Verteidigung ≥', 1], [13, 'Geist ≥', 1], [14, 'Tempo ≥', 1], [15, 'Begabung ≥', 1],
-    [18, 'Freundschaft ≥ %', 1], [21, 'hat Digimon im Team', 'species'], [22, 'hat Digimon befreundet', 'species']]
+EXP = ['dragon', 'beast', 'aquan', 'bird', 'insect', 'machine', 'dark', 'holy']
+# [condition type, text key in web/i18n/<lang>.json, scale (stored value * scale = shown value) | 'item' | 'species']
+CONDS_DS = [[0, 'cond.0', 1]] + [[2 + i, 'cond.exp.' + e, 10] for i, e in enumerate(EXP)] + [[10, 'cond.exp.total', 10],
+    [11, 'cond.atk', 1], [12, 'cond.def', 1], [13, 'cond.spi', 1], [14, 'cond.apt', 1], [15, 'cond.stressMin', 1],
+    [16, 'cond.stressMax', 1], [17, 'cond.friendMin', 1], [18, 'cond.friendMax', 1], [19, 'cond.item', 'item'],
+    [20, 'cond.party', 'species'], [21, 'cond.befriended', 'species'], [23, 'cond.hours', 1]]
+# Dawn/Dusk store values as shown in game (no /10); checked against StrategyWiki's requirement tables
+CONDS_PAK = [[0, 'cond.0', 1]] + [[2 + i, 'cond.exp.' + e, 1] for i, e in enumerate(EXP)] + [[10, 'cond.exp.total', 1],
+    [11, 'cond.atk', 1], [12, 'cond.def', 1], [13, 'cond.spi', 1], [14, 'cond.spd', 1], [15, 'cond.apt', 1],
+    [18, 'cond.friendMin', 1], [21, 'cond.party', 'species'], [22, 'cond.befriended', 'species']]
 # sound (dat/*/sound_data.sdat): sequences without a loop are jingles; labels can be added to 'music' as they are identified
 SOUND = {'ds': {'jingles': [30, 31, 33], 'digivolveSound': {'seq': 31}, 'defaultTheme': 0, 'music': {}},
          'pak': {'jingles': [32], 'digivolveSound': {'seq': 32}, 'defaultTheme': 0, 'music': {}}}
@@ -113,7 +113,7 @@ def meta_pak(nds):
     return {**SOUND['pak'], 'layout': 'pak', 'skSize': 112, 'nconds': 2, 'conds': CONDS_PAK, 'befriended': 22, 'idBase': 65,
             'charset': dgmtool.Charset('pak', dgmtool.load_lang('de')).dec, 'nameStart': start,
             'sources': sorted({s for p in reach for s in species[p]}), 'reachFiles': sorted(reach),
-            'reachNote': 'ohne DNA-Digitation, Eier und Passwörter gerechnet'}
+            'reachNote': 'reach.notePak'}
 
 
 def decode_sk(rec, game):
@@ -151,13 +151,17 @@ def add_mods(meta, roms):
                     if a.get(key) != b.get(key): ch[key] = b[key]
                 if ch: pre[str(idx[(pp, o)])] = ch
             g.setdefault('presets', {})[name] = pre
-            g.setdefault('presetNames', {})[name] = m['name']
+            g.setdefault('presetNames', {})[name] = {'de': m['name'], 'en': m.get('name_en', m['name'])}
             if m.get('encounters'):
-                g['encounters'] = g.get('encounters', []) + [[x['areas'], x['species'], x['chance'], '%s, %d %% der Begegnungen' % (x['where'], x['chance'] // 100)] for x in m['encounters']]
-                g['encounterLabel'] = ' und '.join('%s (%s)' % (x['species_name'], x['where']) for x in m['encounters']) + ' als wilde Digimon (%s)' % m['name'].split(':')[0]
+                g['encounters'] = g.get('encounters', []) + [[x['areas'], x['species'], x['chance'], x['where']] for x in m['encounters']]
+                sp = [(x['species_name'], x['where']) for x in m['encounters']]
+                g['encounterLabel'] = {'de': ' und '.join('%s (%s)' % p for p in sp) + ' als wilde Digimon',
+                                       'en': ' and '.join('%s (%s)' % p for p in sp) + ' as wild Digimon'}
             if m.get('wild_copy'):
                 g['wildCopy'] = [[w['to'], w['from'], w['species']] for w in m['wild_copy']]
-                g['encounterLabel'] = 'Version-exklusive Digimon zusätzlich in den Dungeons der anderen Version (%s)' % ', '.join(sorted({w['species_name'] for w in m['wild_copy']}))
+                names = ', '.join(sorted({w['species_name'] for w in m['wild_copy']}))
+                g['encounterLabel'] = {'de': 'Version-exklusive Digimon zusätzlich in den Dungeons der anderen Version (%s)' % names,
+                                       'en': "Version-exclusive Digimon also in the other version's dungeons (%s)" % names}
             if m.get('sources'): g['sources'] = m['sources']
 
 
@@ -168,19 +172,22 @@ if __name__ == '__main__':
     meta = {'roms': {}, 'games': {}}; patches = {}; loaded = {}
     for rom in roms:
         nds = NDS(rom); game, title = TITLES[nds.title]; loaded[game] = nds
-        name = '%s (Deutsch).bps' % title; patch = open(os.path.join(pdir, name), 'rb').read()
+        name = '%s (Deutsch).bps' % title; patch = open(os.path.join(pdir, name), 'rb').read()   # German is the only translation so far
         src = open(rom, 'rb').read(); de = bps.apply(src, patch); patches[name] = patch
-        meta['games'][game] = dict(meta_ds(nds) if game == 'ds' else meta_pak(nds), title=title)
+        meta['games'][game] = dict(meta_ds(nds) if game == 'ds' else meta_pak(nds), title=title, translations={'de': {'patch': name, 'name': 'Deutsch'}})
         for lang, data in (('en', src), ('de', de)):
             meta['roms']['%08X' % zlib.crc32(data)] = {'game': game, 'lang': lang, 'crc': '%08X' % zlib.crc32(data), 'patch': name}
     add_mods(meta, loaded)
+    i18n = os.path.join(ROOT, 'web', 'i18n')
+    langs = {f[:-5]: json.load(open(os.path.join(i18n, f), encoding='utf-8')) for f in sorted(os.listdir(i18n)) if f.endswith('.json')}
+    meta['languages'] = {c: d['_name'] for c, d in langs.items()}
     web = os.path.join(ROOT, 'web')
     if single:
         rd = lambda f: open(os.path.join(web, f), encoding='utf-8').read()
         html = rd('index.html')
         html = html.replace('<link rel="stylesheet" href="style.css">', '<style>\n' + rd('style.css') + '</style>')
-        pre = 'var DW_META = %s;\nvar DW_I\nINE = %s;\n' % (json.dumps(meta, separators=(',', ':'), ensure_ascii=False),
-                                                       json.dumps({n: base64.b64encode(p).decode() for n, p in patches.items()}))
+        pre = ('var DW_META = %s;\nvar DW_INLINE = %s;\nvar DW_I18N = %s;\n' % (json.dumps(meta, separators=(',', ':'), ensure_ascii=False),
+               json.dumps({n: base64.b64encode(p).decode() for n, p in patches.items()}), json.dumps(langs, ensure_ascii=False)))
         html = html.replace('<script src="core.js"></script>', '<script>\n' + pre + '</script>\n<script id="core">\n' + rd('core.js') + '</script>')
         html = html.replace('<script src="app.js"></script>', '<script>\n' + rd('app.js') + '</script>')
         open(single, 'w', encoding='utf-8').write(html); print('%s: %d bytes' % (single, len(html)))
