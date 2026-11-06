@@ -8,6 +8,10 @@ Load your own ROM. The page recognises the game by its checksum, applies the Ger
 every digivolution route (presets such as "Offline: every Digimon without matching", or your own routes, shareable as
 JSON). Everything runs locally; the ROM never leaves your device. No ROMs are part of this repository.
 
+**Privacy:** the page loads nothing from third parties (no external fonts, scripts, CDNs, analytics or cookies);
+all files come from this repository. Only your settings (mute, music, digivolve sound) are kept in your browser's
+localStorage. Hosting is GitHub Pages, see GitHub's privacy statement for its server logs.
+
 | Game | Supported ROM (CRC32) | German | Mods |
 |---|---|---|---|
 | Digimon World DS | USA `B6F4762E` | ✓ | `ds-offline` |
