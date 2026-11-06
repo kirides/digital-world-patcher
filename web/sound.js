@@ -188,7 +188,9 @@ var DWSound = (() => {
     if (loop) { s.loop = true; if (r.loopEnd) { s.loopStart = r.loopStart; s.loopEnd = r.loopEnd; } }
     s.start(); return s;
   }
-  document.addEventListener('pointerdown', () => { if (ctx && ctx.state === 'suspended') ctx.resume(); }, true);
+  document.addEventListener('pointerdown', () => { if (ctx && ctx.state === 'suspended' && !document.hidden) ctx.resume(); }, true);
+  // background tab: pause all sound, resume when the tab is shown again
+  document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend(); else if (!muted) ctx.resume(); });
   return {
     load(rom, files) { stop(); cur = null; S = null; for (const k in cache) delete cache[k];
       const k = Object.keys(files).find(p => p.toLowerCase().endsWith('.sdat')); if (k) { const [s, e] = files[k]; S = SDAT.open(rom.subarray(s, e)); } return !!S; },
