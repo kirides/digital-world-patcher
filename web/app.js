@@ -27,7 +27,7 @@ async function loadLang(code) {
   document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle); el.setAttribute('aria-label', el.title); });
   document.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = t(el.dataset.i18nPh));
   document.title = t('meta.title');
-  $('lang').innerHTML = opts(Object.entries(META.languages).map(([c, n]) => [c, '🌐 ' + n]), code);
+  $('lang').innerHTML = opts(Object.entries(META.languages).map(([c, n]) => [c, n]), code);
   setMuted(DWSound.muted);
   if (model) { fillGameUI(false); refresh(); soundLists(); }
 }
@@ -38,7 +38,8 @@ function pickBtn(sel, attrs) { return `<button type="button" class="pick" ${attr
 let popCb = null;
 function openPick(el, allowNone, cb) {
   popCb = cb; const r = el.getBoundingClientRect(), p = $('pop');
-  p.style.left = (r.left + scrollX) + 'px'; p.style.top = (r.bottom + scrollY + 4) + 'px'; p.classList.remove('hide');
+  p.classList.remove('hide'); const w = p.offsetWidth;          // keep the picker on screen (phones)
+  p.style.left = (Math.max(8, Math.min(r.left, document.documentElement.clientWidth - w - 8)) + scrollX) + 'px'; p.style.top = (r.bottom + scrollY + 4) + 'px';
   $('popq').value = ''; fillPick(allowNone); $('popq').oninput = () => fillPick(allowNone); $('popq').focus();
 }
 function fillPick(allowNone) {
