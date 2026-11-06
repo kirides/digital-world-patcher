@@ -79,14 +79,21 @@ input[type=checkbox]{accent-color:var(--orange);width:1.05em;height:1.05em}
 .chips{display:flex;flex-wrap:wrap;align-items:center;gap:.3em .9em;margin:.3em 0}
 .chips span{display:inline-flex;align-items:center;gap:4px;cursor:pointer} .chips span:hover{color:var(--cyan)}
 .chips .ico{width:30px;height:30px}
-.routes{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:.8em;margin:.8em 0}
+.routes{display:flex;flex-direction:column;gap:.9em;margin:.2em 0 .8em 56px;padding:.4em 0 0 34px;position:relative;max-width:560px}
+/* tree: trunk from the portrait down, one branch per route */
+.routes::before{content:"";position:absolute;left:0;top:-.6em;bottom:var(--trunk-end,2.2em);width:3px;border-radius:2px;
+  background:linear-gradient(var(--cyan),var(--orange));box-shadow:0 0 8px #37e0ff66}
+.route{position:relative}
+.route::before{content:"";position:absolute;left:-34px;top:1.55em;width:34px;height:3px;border-radius:2px;background:var(--cyan);box-shadow:0 0 6px #37e0ff66}
+.route::after{content:"";position:absolute;left:-40px;top:calc(1.55em - 4px);width:11px;height:11px;border-radius:50%;background:var(--bg);border:3px solid var(--cyan)}
+.route:last-child{--last:1}
 .route{background:#071226cc;border:1px solid var(--line);border-radius:12px;padding:.7em;display:flex;flex-direction:column;gap:.5em}
 .route.empty{opacity:.55;border-style:dashed}
 .route .head{display:flex;align-items:center;gap:.3em}
 .route .head .pick{flex:1;min-width:0}
 .kv{display:grid;grid-template-columns:5.5em 1fr;align-items:center;gap:.4em}
 .kv .lbl{color:var(--mut);font-size:.88em}
-.cond{display:grid;grid-template-columns:1fr 7.5em;gap:.4em;padding:.4em;border-radius:9px;background:#0b1a33;border:1px solid var(--line)}
+.cond{display:grid;grid-template-columns:minmax(11em,1fr) minmax(8em,1fr);gap:.4em;padding:.4em;border-radius:9px;background:#0b1a33;border:1px solid var(--line)}
 .cond select{width:100%}
 .cond input[type=number],.kv input[type=number]{width:100%}
 .degen{display:flex;flex-wrap:wrap;align-items:center;gap:.6em;margin-top:.4em}

@@ -48,6 +48,8 @@ function renderDetail() {
   h += `</div><div class="degen"><span class="mut">Degeneriert zu (Return Chip):</span> ${pickBtn(e.p, 'id="prev"')}${e.p !== null ? go(e.p) : ''}
     <span class="grow"></span><button id="rst" class="ghost">Original für ${N(cur)}</button></div>`;
   $('detail').innerHTML = h;
+  { const rs = $('detail').querySelector('.routes'), last = rs && rs.lastElementChild;   // trunk ends at the last branch
+    if (last) rs.style.setProperty('--trunk-end', (last.offsetHeight - parseFloat(getComputedStyle(last).fontSize) * 1.55 - 2) + 'px'); }
   const S = () => st[cur].s;
   $('detail').querySelectorAll('[data-k]').forEach(el => {
     const k = +el.dataset.k, f = el.dataset.f, c = +el.dataset.c;
