@@ -174,9 +174,10 @@ var SDAT = (() => {
 
 // UI glue: theme music and effects. Only the settings (mute, theme number) are remembered, never ROM data.
 var DWSound = (() => {
-  let ctx = null, S = null, cur = null, src = null, gain = null, muted = localStorage.getItem('dw-mute') === '1', token = 0, volume = +(localStorage.getItem('dw-volume') ?? 0.25);
+  let ctx = null, S = null, cur = null, src = null, gain = null, muted = localStorage.getItem('dw-mute') === '1', token = 0, volume = +(localStorage.getItem('dw-music-volume') ?? 0.10), fxGain = null;
+  const FX_VOLUME = 0.5;                                   // digivolve sound and other effects
   const cache = {};
-  function ensure() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); gain = ctx.createGain(); gain.gain.value = volume; gain.connect(ctx.destination); } if (ctx.state === 'suspended') ctx.resume(); }
+  function ensure() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); gain = ctx.createGain(); gain.gain.value = volume; gain.connect(ctx.destination); fxGain = ctx.createGain(); fxGain.gain.value = FX_VOLUME; fxGain.connect(ctx.destination); } if (ctx.state === 'suspended') ctx.resume(); }
   function stop() { if (src) { try { src.stop(); } catch (e) {} src = null; } }
   async function play(which, loop) {
     if (muted || !S) return null; ensure();
@@ -184,7 +185,7 @@ var DWSound = (() => {
     if (!(key in cache)) { await new Promise(r => setTimeout(r, 0)); cache[key] = SDAT.render(S, which, { maxSec: loop ? 240 : 20, loop }); }
     const r = cache[key]; if (!r || !r.left.length) return null;
     const b = ctx.createBuffer(2, r.left.length, r.rate); b.copyToChannel(r.left, 0); b.copyToChannel(r.right, 1);
-    const s = ctx.createBufferSource(); s.buffer = b; s.connect(gain);
+    const s = ctx.createBufferSource(); s.buffer = b; s.connect(loop ? gain : fxGain);
     if (loop) { s.loop = true; if (r.loopEnd) { s.loopStart = r.loopStart; s.loopEnd = r.loopEnd; } }
     s.start(); return s;
   }
@@ -201,7 +202,7 @@ var DWSound = (() => {
     async play1(which) { await play(which, false); },
     get muted() { return muted; },
     get volume() { return volume; },
-    setVolume(v) { volume = v; localStorage.setItem('dw-volume', v); if (gain) gain.gain.value = v; },
+    setVolume(v) { volume = v; localStorage.setItem('dw-music-volume', v); if (gain) gain.gain.value = v; },
     setMuted(m) { muted = m; localStorage.setItem('dw-mute', m ? '1' : '0'); if (m) stop(); else if (cur !== null) this.theme(cur); },
   };
 })();
