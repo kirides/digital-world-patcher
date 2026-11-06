@@ -174,9 +174,9 @@ var SDAT = (() => {
 
 // UI glue: theme music and effects. Only the settings (mute, theme number) are remembered, never ROM data.
 var DWSound = (() => {
-  let ctx = null, S = null, cur = null, src = null, gain = null, muted = localStorage.getItem('dw-mute') === '1', token = 0;
+  let ctx = null, S = null, cur = null, src = null, gain = null, muted = localStorage.getItem('dw-mute') === '1', token = 0, volume = +(localStorage.getItem('dw-volume') ?? 0.25);
   const cache = {};
-  function ensure() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); gain = ctx.createGain(); gain.gain.value = 0.7; gain.connect(ctx.destination); } if (ctx.state === 'suspended') ctx.resume(); }
+  function ensure() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); gain = ctx.createGain(); gain.gain.value = volume; gain.connect(ctx.destination); } if (ctx.state === 'suspended') ctx.resume(); }
   function stop() { if (src) { try { src.stop(); } catch (e) {} src = null; } }
   async function play(which, loop) {
     if (muted || !S) return null; ensure();
@@ -198,6 +198,8 @@ var DWSound = (() => {
     async effect(n) { if (n !== null && n >= 0) await play({ se: n }, false); },
     async play1(which) { await play(which, false); },
     get muted() { return muted; },
+    get volume() { return volume; },
+    setVolume(v) { volume = v; localStorage.setItem('dw-volume', v); if (gain) gain.gain.value = v; },
     setMuted(m) { muted = m; localStorage.setItem('dw-mute', m ? '1' : '0'); if (m) stop(); else if (cur !== null) this.theme(cur); },
   };
 })();

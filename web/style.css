@@ -118,3 +118,4 @@ input[type=checkbox]{accent-color:var(--orange);width:1.05em;height:1.05em}
 .gh{display:inline-flex;align-items:center;gap:.4em;margin-left:.4em;padding:.35em .8em;border:1px solid var(--line2);border-radius:9px;color:var(--txt);text-decoration:none;background:#0b1a33}
 .gh:hover{border-color:var(--cyan);box-shadow:0 0 0 2px #37e0ff33} .gh svg{width:1.2em;height:1.2em;fill:currentColor}
 @media(max-width:560px){.gh span{display:none}}
+#vol{width:90px;accent-color:var(--cyan)}

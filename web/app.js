@@ -150,6 +150,7 @@ function setMuted(m) { DWSound.setMuted(m); $('mute').textContent = m ? '🔇' :
 $('theme').onchange = themeChanged;
 $('mute').onclick = () => setMuted(!DWSound.muted);
 setMuted(DWSound.muted);
+$('vol').value = DWSound.volume; $('vol').oninput = () => DWSound.setVolume(+$('vol').value);
 function digivolveFx() {
   const f = $('flash'); f.classList.remove('hide'); f.style.animation = 'none'; void f.offsetWidth; f.style.animation = ''; setTimeout(() => f.classList.add('hide'), 1300);
   const w = JSON.parse(localStorage.getItem(SND.key('evo')) || 'null') || G.digivolveSound;
