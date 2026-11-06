@@ -45,7 +45,8 @@
     33
    ],
    "digivolveSound": {
-    "seq": 31
+    "seq": 31,
+    "seconds": 8
    },
    "defaultTheme": 0,
    "music": {},
@@ -632,10 +633,52 @@
     32
    ],
    "digivolveSound": {
-    "seq": 32
+    "seq": 31,
+    "seconds": 7
    },
    "defaultTheme": 0,
-   "music": {},
+   "music": {
+    "31": {
+     "de": "Digitation",
+     "en": "Digivolution"
+    },
+    "36": {
+     "de": "Kampf 1",
+     "en": "Battle 1"
+    },
+    "37": {
+     "de": "Kampf 2",
+     "en": "Battle 2"
+    },
+    "41": {
+     "de": "Kampf 3",
+     "en": "Battle 3"
+    },
+    "38": {
+     "de": "Kampf 4",
+     "en": "Battle 4"
+    },
+    "42": {
+     "de": "Kampf 5",
+     "en": "Battle 5"
+    },
+    "39": {
+     "de": "Kampf 6",
+     "en": "Battle 6"
+    },
+    "43": {
+     "de": "Kampf 7",
+     "en": "Battle 7"
+    },
+    "40": {
+     "de": "Kampf 8",
+     "en": "Battle 8"
+    },
+    "44": {
+     "de": "Kampf 9",
+     "en": "Battle 9"
+    }
+   },
    "layout": "pak",
    "skSize": 112,
    "nconds": 2,
@@ -1726,10 +1769,52 @@
     32
    ],
    "digivolveSound": {
-    "seq": 32
+    "seq": 31,
+    "seconds": 7
    },
    "defaultTheme": 0,
-   "music": {},
+   "music": {
+    "31": {
+     "de": "Digitation",
+     "en": "Digivolution"
+    },
+    "36": {
+     "de": "Kampf 1",
+     "en": "Battle 1"
+    },
+    "37": {
+     "de": "Kampf 2",
+     "en": "Battle 2"
+    },
+    "41": {
+     "de": "Kampf 3",
+     "en": "Battle 3"
+    },
+    "38": {
+     "de": "Kampf 4",
+     "en": "Battle 4"
+    },
+    "42": {
+     "de": "Kampf 5",
+     "en": "Battle 5"
+    },
+    "39": {
+     "de": "Kampf 6",
+     "en": "Battle 6"
+    },
+    "43": {
+     "de": "Kampf 7",
+     "en": "Battle 7"
+    },
+    "40": {
+     "de": "Kampf 8",
+     "en": "Battle 8"
+    },
+    "44": {
+     "de": "Kampf 9",
+     "en": "Battle 9"
+    }
+   },
    "layout": "pak",
    "skSize": 112,
    "nconds": 2,

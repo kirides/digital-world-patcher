@@ -171,7 +171,7 @@ $('go').onclick = async () => {
 };
 
 // ---- sound: theme music, digivolve sound, sound test (settings in localStorage, ROM data never stored)
-const SND = { key: k => 'dw-' + k + '-' + (model ? model.game : ''), jingles: [] };
+const SND = { key: k => 'dw-' + (k === 'evo' ? 'evo2' : k) + '-' + (model ? model.game : ''), jingles: [] };   // evo2: old choices used the wrong default
 const trackName = n => L((G.music || {})[n]) || t('st.track', { n: String(n).padStart(2, '0') });
 function soundSetup() {
   if (!DWSound.load(rom, model.files)) { $('theme').disabled = true; return; }
@@ -186,12 +186,13 @@ function soundLists(themeValue) {
   $('theme').innerHTML = `<option value="-1">${t('head.musicOff')}</option>` + tracks.filter(n => !SND.jingles.includes(n)).map(n => `<option value="${n}">♪ ${trackName(n)}</option>`).join('');
   $('theme').disabled = false; $('theme').value = val;
   const evo = JSON.parse(localStorage.getItem(SND.key('evo')) || 'null') || G.digivolveSound || null;
-  const item = (label, which) => `<div class="st-item${JSON.stringify(which) === JSON.stringify(evo) ? ' on' : ''}" data-w='${JSON.stringify(which)}'><span class="nm">${label}</span><button class="ghost" data-a="play">▶</button><button class="ghost" data-a="evo" title="${esc(t('st.star'))}">★</button></div>`;
+  const same = (x, y) => !!x && !!y && x.seq === y.seq && x.se === y.se;
+  const item = (label, which) => `<div class="st-item${same(which, evo) ? ' on' : ''}" data-w='${JSON.stringify(which)}'><span class="nm">${label}</span><button class="ghost" data-a="play">▶</button><button class="ghost" data-a="evo" title="${esc(t('st.star'))}">★</button></div>`;
   $('st-music').innerHTML = tracks.map(n => item(trackName(n) + (SND.jingles.includes(n) ? ' ' + t('st.jingle') : ''), { seq: n })).join('');
   $('st-se').innerHTML = DWSound.effects().map(n => item(t('st.effect', { n: String(n).padStart(3, '0') }), { se: n })).join('');
   document.querySelectorAll('.st-item').forEach(el => {
     const w = JSON.parse(el.dataset.w);
-    el.querySelector('[data-a=play]').onclick = () => { if (DWSound.muted) setMuted(false); w.seq !== undefined && !SND.jingles.includes(w.seq) ? ($('theme').value = w.seq, themeChanged()) : DWSound.play1(w); };
+    el.querySelector('[data-a=play]').onclick = () => { if (DWSound.muted) setMuted(false); w.seq !== undefined && !SND.jingles.includes(w.seq) ? ($('theme').value = w.seq, themeChanged()) : DWSound.play1({ seconds: 10, ...w }); };
     el.querySelector('[data-a=evo]').onclick = () => { localStorage.setItem(SND.key('evo'), JSON.stringify(w)); document.querySelectorAll('.st-item.on').forEach(x => x.classList.remove('on')); el.classList.add('on'); };
   });
 }
@@ -203,5 +204,5 @@ $('vol').value = DWSound.volume; $('vol').oninput = () => DWSound.setVolume(+$('
 function digivolveFx() {
   const f = $('flash'); f.classList.remove('hide'); f.style.animation = 'none'; void f.offsetWidth; f.style.animation = ''; setTimeout(() => f.classList.add('hide'), 1300);
   const w = JSON.parse(localStorage.getItem(SND.key('evo')) || 'null') || G.digivolveSound;
-  if (w) DWSound.play1(w);
+  if (w) DWSound.play1({ seconds: 7, ...w });
 }

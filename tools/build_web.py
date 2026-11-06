@@ -67,8 +67,13 @@ CONDS_PAK = [[0, 'cond.0', 1]] + [[2 + i, 'cond.exp.' + e, 1] for i, e in enumer
     [11, 'cond.atk', 1], [12, 'cond.def', 1], [13, 'cond.spi', 1], [14, 'cond.spd', 1], [15, 'cond.apt', 1],
     [18, 'cond.friendMin', 1], [21, 'cond.party', 'species'], [22, 'cond.befriended', 'species']]
 # sound (dat/*/sound_data.sdat): sequences without a loop are jingles; labels can be added to 'music' as they are identified
-SOUND = {'ds': {'jingles': [30, 31, 33], 'digivolveSound': {'seq': 31}, 'defaultTheme': 0, 'music': {}},
-         'pak': {'jingles': [32], 'digivolveSound': {'seq': 32}, 'defaultTheme': 0, 'music': {}}}
+# Found by disassembly (Dawn/Dusk: battle music table at 0x0212EB44 indexed by battle type; the DigiLab and the
+# digivolution animation set track 31). DS: digivolution track not identified yet, its jingles are 30, 31, 33.
+BATTLE = {36 + 0: 1, 37: 2, 41: 3, 38: 4, 42: 5, 39: 6, 43: 7, 40: 8, 44: 9}
+SOUND = {'ds': {'jingles': [30, 31, 33], 'digivolveSound': {'seq': 31, 'seconds': 8}, 'defaultTheme': 0, 'music': {}},
+         'pak': {'jingles': [32], 'digivolveSound': {'seq': 31, 'seconds': 7}, 'defaultTheme': 0,
+                 'music': {31: {'de': 'Digitation', 'en': 'Digivolution'},
+                           **{n: {'de': 'Kampf %d' % k, 'en': 'Battle %d' % k} for n, k in BATTLE.items()}}}}
 TITLES = {'DIGIMONWORLD': ('ds', 'Digimon World DS'), 'DS2_USA_DAWN': ('dawn', 'Digimon World Dawn'),
           'DS2_USA_DUSK': ('dusk', 'Digimon World Dusk')}
 

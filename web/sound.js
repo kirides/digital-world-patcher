@@ -78,12 +78,13 @@ var SDAT = (() => {
     function noteOn(t, note, vel, dur) {
       const n = Math.max(0, Math.min(127, note + t.trans)), ins = instrument(S, bankId, t.prg, n); if (!ins) return;
       const pick = (tv, iv) => tv !== 255 ? tv : iv;
-      voices.push({ t, ins, note: n, vel, left: dur, pos: 0, env: 0, phase: 'a', a: atk(pick(t.a, ins.a)), d: fall(pick(t.d, ins.d)),
+      voices.push({ t, ins, note: n, vel, left: dur, born: secs, pos: 0, env: 0, phase: 'a', a: atk(pick(t.a, ins.a)), d: fall(pick(t.d, ins.d)),
         sus: amp(pick(t.s, ins.s)), r: fall(pick(t.r, ins.r)), lfsr: 0x7FFF });
     }
     function finishLoop(to) { if (!wantLoop || loop) return; loop = { from: tickTime[tracks[0].seen[to]] ?? 0, to: secs }; }
     function step(t) {                                     // run one track until it waits
-      for (let guard = 0; guard < 4096 && !t.done && t.wait === 0; guard++) {
+      let guard = 0;
+      for (; guard < 4096 && !t.done && t.wait === 0; guard++) {
         const p = t.pc; if (!(p in t.seen)) t.seen[p] = tick;
         let c = data[t.pc++], cond = true, mode = 0;
         if (c === 0xA2) { cond = t.cond; c = data[t.pc++]; }
@@ -130,13 +131,17 @@ var SDAT = (() => {
             else t.done = true;                               // unknown command: stop this track
         }
       }
+      if (guard >= 4096) t.done = true;                    // endless loop without any wait: stop the track
     }
     const spu = TICK * RATE; let out = 0, frac = 0;
     while (out < len) {
       acc += tempo;
       while (acc >= 240) { acc -= 240; tickTime[tick] = secs;
         for (const t of tracks) if (t && !t.done) { if (t.wait > 0) t.wait--; if (t.wait === 0) step(t); }
-        for (const vo of voices) if (vo.phase !== 'r' && --vo.left <= 0) vo.phase = 'r';
+        for (const vo of voices) {                         // duration 0 = play until the sample ends (one-shot effects)
+          if (vo.phase === 'r') continue;
+          if (vo.left > 0) { if (--vo.left <= 0) vo.phase = 'r'; }
+          else if (vo.t.done && (vo.ins.kind !== 'pcm' || vo.ins.wave.loop) && secs - vo.born > 2.5) vo.phase = 'r'; }   // looping one-shots: the game stops them, we play 2.5 s
         tick++; }
       if (loop) break;                                     // music: stop at the loop point, Web Audio loops the buffer
       for (const vo of voices) {
@@ -164,7 +169,8 @@ var SDAT = (() => {
       out += n; secs = out / RATE;
     }
     let peak = 0; for (let i = 0; i < out; i += 5) peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i]));
-    if (peak > 0.95) { const k = 0.95 / peak; for (let i = 0; i < out; i++) { L[i] *= k; R[i] *= k; } }
+    const target = which.se !== undefined && peak > 0 ? Math.min(0.8, peak * 20) : Math.min(peak, 0.95);   // quiet effects are brought up
+    if (peak > 0 && target !== peak) { const k = target / peak; for (let i = 0; i < out; i++) { L[i] *= k; R[i] *= k; } }
     const res = { left: L.subarray(0, out), right: R.subarray(0, out), rate: RATE, seconds: out / RATE, peak };
     if (loop && loop.to > loop.from + 0.5) { res.loopStart = loop.from; res.loopEnd = loop.to; }
     return res;
@@ -179,15 +185,21 @@ var DWSound = (() => {
   const cache = {};
   function ensure() { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); gain = ctx.createGain(); gain.gain.value = volume; gain.connect(ctx.destination); fxGain = ctx.createGain(); fxGain.gain.value = FX_VOLUME; fxGain.connect(ctx.destination); } if (ctx.state === 'suspended') ctx.resume(); }
   function stop() { if (src) { try { src.stop(); } catch (e) {} src = null; } }
-  async function play(which, loop) {
+  async function play(which, loop, seconds) {   // seconds: play only an excerpt of a sequence, with a fade-out
     if (muted || !S) return null; ensure();
-    const key = JSON.stringify(which);
+    const key = JSON.stringify({ seq: which.seq, se: which.se });
     if (!(key in cache)) { await new Promise(r => setTimeout(r, 0)); cache[key] = SDAT.render(S, which, { maxSec: loop ? 240 : 20, loop }); }
     const r = cache[key]; if (!r || !r.left.length) return null;
     const b = ctx.createBuffer(2, r.left.length, r.rate); b.copyToChannel(r.left, 0); b.copyToChannel(r.right, 1);
-    const s = ctx.createBufferSource(); s.buffer = b; s.connect(loop ? gain : fxGain);
-    if (loop) { s.loop = true; if (r.loopEnd) { s.loopStart = r.loopStart; s.loopEnd = r.loopEnd; } }
-    s.start(); return s;
+    const s = ctx.createBufferSource(); s.buffer = b;
+    if (loop) { s.connect(gain); s.loop = true; if (r.loopEnd) { s.loopStart = r.loopStart; s.loopEnd = r.loopEnd; } s.start(); return s; }
+    const g = ctx.createGain(), t0 = ctx.currentTime, len = Math.min(seconds || r.seconds, r.seconds), fade = Math.min(1.5, len / 3);
+    s.connect(g); g.connect(fxGain);
+    g.gain.setValueAtTime(1, t0); g.gain.setValueAtTime(1, t0 + len - fade); g.gain.linearRampToValueAtTime(0, t0 + len);
+    // duck the theme music while the effect plays
+    gain.gain.cancelScheduledValues(t0); gain.gain.setValueAtTime(gain.gain.value, t0); gain.gain.linearRampToValueAtTime(0, t0 + 0.3);
+    gain.gain.setValueAtTime(0, t0 + len); gain.gain.linearRampToValueAtTime(volume, t0 + len + 0.8);
+    s.start(t0); s.stop(t0 + len + 0.05); return s;
   }
   document.addEventListener('pointerdown', () => { if (ctx && ctx.state === 'suspended' && !document.hidden) ctx.resume(); }, true);
   // background tab: pause all sound, resume when the tab is shown again
@@ -199,7 +211,7 @@ var DWSound = (() => {
     effects() { return S ? S.arcSeqs.map((s, i) => s ? i : -1).filter(i => i >= 0) : []; },
     async theme(n) { cur = n; const my = ++token; stop(); if (n === null || n < 0) return; const s = await play({ seq: n }, true); if (my === token && s) src = s; else if (s) s.stop(); },
     async effect(n) { if (n !== null && n >= 0) await play({ se: n }, false); },
-    async play1(which) { await play(which, false); },
+    async play1(which) { await play(which, false, which && which.seconds); },
     get muted() { return muted; },
     get volume() { return volume; },
     setVolume(v) { volume = v; localStorage.setItem('dw-music-volume', v); if (gain) gain.gain.value = v; },
