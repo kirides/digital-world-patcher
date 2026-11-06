@@ -1,0 +1,14 @@
+*.nds
+*.sav
+*.ml[0-9]
+__pycache__/
+*.pyc
+.api_key
+translations/api_spend.json
+translations/*/*/batches/
+translations/*/*/out/
+work/
+release/
+# language patches are published for the web page only
+*.bps
+!web/patches/*.bps

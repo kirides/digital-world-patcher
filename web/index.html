@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Digimon World Patcher &amp; Digitations-Editor (DS, Dawn, Dusk)</title>
+<link rel="stylesheet" href="style.css">
+</head><body>
+<h1>Digimon World Patcher &amp; Digitations-Editor</h1>
+<p>Für <b>Digimon World DS</b>, <b>Dawn</b> und <b>Dusk</b> (USA). Alles läuft lokal in deinem Browser, deine ROM wird nirgendwohin hochgeladen. <small>Everything runs locally; nothing is uploaded.</small></p>
+
+<div class="box" id="step1"><h2>1. ROM laden</h2>
+<div id="drop"><p>Ziehe deine ROM hierher oder <label style="margin:0"><u style="cursor:pointer">wähle sie aus</u><input type="file" id="rom" accept=".nds" hidden></label>.<br>
+<small>Das Spiel wird automatisch erkannt. Eine schon übersetzte deutsche Fassung geht auch.</small></p><p id="msg1"></p></div>
+</div>
+
+<div id="main" class="hide">
+<div class="box"><h2>2. Digitationen <small>(aus deiner ROM gelesen)</small></h2>
+<p>Vorlage: <select id="preset"></select>
+<button id="apply">Vorlage laden</button>
+<button id="exp">Export JSON</button> <button id="impb">Import JSON</button><input type="file" id="imp" accept=".json" hidden></p>
+<p id="reach"></p><p id="missing" class="chips"></p>
+<div id="ed"><div><input id="q" placeholder="Digimon suchen…" style="width:100%;box-sizing:border-box;margin-bottom:.4em">
+<label><input type="checkbox" id="onlychg"> nur geänderte</label><div id="list"></div></div>
+<div id="detail"></div></div>
+</div>
+
+<div class="box"><h2>3. Patchen</h2>
+<label id="delab"><input type="checkbox" id="de" checked> Deutsche Übersetzung</label>
+<label id="enclab"><input type="checkbox" id="enc" checked> <span id="enctext"></span></label>
+<label><input type="checkbox" id="evo" checked> Digitationen aus dem Editor übernehmen</label><br>
+<button id="go">Patchen &amp; speichern</button> <span id="msg"></span>
+</div>
+<p class="mut">Eigene Routen sind nicht im Spiel getestet: Ziele sollten zur nächsten Stufe passen (Rookie → Champion …). Teile deine Routen als JSON-Datei.</p>
+</div>
+<div id="pop" class="hide"><input id="popq" placeholder="suchen…"><div id="popl"></div></div>
+
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body></html>

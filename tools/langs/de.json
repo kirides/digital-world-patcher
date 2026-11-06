@@ -1,0 +1,78 @@
+{
+ "code": "de",
+ "name": "German",
+ "native": "Deutsch",
+ "letters": "äöüÄÖÜß",
+ "style": "Use informal \"du\" for dialogue between characters and for system messages addressed to the player. Natural, lively, child-friendly tone fitting the original; keep jokes and puns as German equivalents rather than literal translations.",
+ "glyphs": {
+  "ß": {
+   "art": [
+    ".@@.",
+    "@..@",
+    "@..@",
+    "@.@.",
+    "@..@",
+    "@..@",
+    "@..@",
+    "@..@",
+    "@.@."
+   ],
+   "top": 3,
+   "width": 5,
+   "art16": [
+    ".####.",
+    "##..##",
+    "##..##",
+    "##.##.",
+    "##.##.",
+    "##..##",
+    "##..##",
+    "##..##",
+    "##.###",
+    "##.##."
+   ],
+   "top16": 4,
+   "width16": 8
+  }
+ },
+ "normalize": {
+  "ẞ": "SS"
+ },
+ "glossary": {
+  "Tamer": "Tamer",
+  "Digivolve": "digitieren",
+  "Digivolution": "Digitation",
+  "Dedigivolve": "zurückdigitieren",
+  "DNA Digivolve": "DNA-digitieren",
+  "Digimon": "Digimon",
+  "Digi-Egg": "Digi-Ei",
+  "Partner": "Partner",
+  "Farm": "Farm",
+  "Farm Island": "Farminsel",
+  "Digifarm": "Digifarm",
+  "HP": "HP",
+  "MP": "MP",
+  "EXP": "EP",
+  "item": "Item",
+  "Bits": "Bits",
+  "Attack": "Angriff",
+  "Defense": "Verteidigung",
+  "Speed": "Tempo",
+  "Spirit": "Geist",
+  "Brains": "Verstand",
+  "Rookie": "Rookie",
+  "Champion": "Champion",
+  "Ultimate": "Ultra",
+  "Mega": "Mega",
+  "In-Training": "Ausbildung",
+  "Fresh": "Baby",
+  "Data": "Daten",
+  "Vaccine": "Serum",
+  "Virus": "Virus",
+  "Free": "Frei",
+  "Tamer Points": "Tamer-Punkte",
+  "Tamer Rank": "Tamer-Rang",
+  "Quest": "Auftrag"
+ },
+ "readme": "Deutsche Fanübersetzung für Digimon World Dawn / Dusk / DS.\nDen Patch mit RomPatcher.js (https://www.marcrobledo.com/RomPatcher.js/), Flips oder beat auf ein eigenes, unverändertes Abbild des Spiels anwenden. Die erwartete Prüfsumme des Originals steht unten; passt sie nicht, lehnt der Patcher die Datei ab.\n\nGerman fan translation. Apply the matching .bps patch to your own unmodified dump; expected checksums below."
+}

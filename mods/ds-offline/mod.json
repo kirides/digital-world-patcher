@@ -1,0 +1,100 @@
+{
+ "name": "Offline: alle Digimon ohne Matching",
+ "name_en": "Offline: every Digimon without matching",
+ "game": "ds",
+ "description": "Makes the Digimon that are only obtainable through Digimon Matching (Omnimon, Imperialdramon Paladin Mode, Gallantmon Crimson Mode, Numemon, the Chibomon/Veemon line) obtainable alone. Data-only: digivolution table (dat/sk) and encounter table (dat/ec), edited in place.",
+ "condition_types": "0 none, 2-9 Dragon/Beast/Aquan/Bird/Insect/Machine/Dark/Holy EXP (stored /10), 10 total EXP/10, 11 ATK, 12 DEF, 13 SPI, 14 aptitude, 15/16 stress >=/<= %, 17/18 friendship >=/<= %, 19 key item, 20 species in party, 21 species befriended, 23 play time hours",
+ "evolutions": [
+  {
+   "from": 144,
+   "from_name": "MetalGreymon",
+   "slot": 2,
+   "to": 242,
+   "to_name": "Omnimon",
+   "level": 62,
+   "cond": 17,
+   "value": 90,
+   "set_degenerate": false
+  },
+  {
+   "from": 175,
+   "from_name": "Antylamon",
+   "slot": 2,
+   "to": 287,
+   "to_name": "ChaosGallantmon",
+   "level": 62,
+   "cond": 8,
+   "value": 2000,
+   "set_degenerate": false
+  },
+  {
+   "from": 173,
+   "from_name": "Paildramon",
+   "slot": 2,
+   "to": 245,
+   "to_name": "Imperialdramon Paladin Mode",
+   "level": 70,
+   "cond": 9,
+   "value": 4000,
+   "set_degenerate": true
+  },
+  {
+   "from": 178,
+   "from_name": "WarGrowlmon",
+   "slot": 1,
+   "to": 253,
+   "to_name": "Gallantmon Crimson Mode",
+   "level": 70,
+   "cond": 2,
+   "value": 4000,
+   "set_degenerate": true
+  },
+  {
+   "from": 78,
+   "from_name": "Sukamon",
+   "slot": 2,
+   "to": 71,
+   "to_name": "Numemon",
+   "level": 15,
+   "cond": 0,
+   "value": 0,
+   "set_degenerate": true
+  },
+  {
+   "from": 71,
+   "from_name": "Numemon",
+   "slot": 0,
+   "to": 152,
+   "to_name": "Digitamamon",
+   "level": 30,
+   "cond": 0,
+   "value": 0,
+   "set_degenerate": true
+  }
+ ],
+ "encounters": [
+  {
+   "areas": [
+    1
+   ],
+   "species": 9,
+   "species_name": "Chibomon",
+   "chance": 800,
+   "where": "Data Forest"
+  },
+  {
+   "areas": [
+    13,
+    14,
+    15,
+    16,
+    17,
+    18
+   ],
+   "species": 13,
+   "species_name": "Veemon",
+   "chance": 800,
+   "where": "Sheer Valley"
+  }
+ ]
+}
