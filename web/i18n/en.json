@@ -128,5 +128,20 @@
  "enc.show": "Show in the editor: {name}",
  "enc.tele": "Teleporter map",
  "enc.mapN": "map {n} after the teleporter",
- "enc.mapOther": "other map"
+ "enc.mapOther": "other map",
+ "enc.edit": "Edit",
+ "enc.done": "Done",
+ "enc.add": "Encounter",
+ "enc.del": "Remove encounter",
+ "enc.delMon": "Remove Digimon",
+ "enc.addMon": "Add Digimon",
+ "enc.reset": "Original",
+ "enc.sum": "Total {sum}",
+ "enc.weight": "Weight",
+ "enc.weightHint": "Share = weight / sum of all weights",
+ "enc.lvShort": "Lv",
+ "enc.shared": "This table is used by {n} maps.",
+ "enc.errSum": "Encounter table: the shares add up to {sum} %, it must be 100 %.",
+ "enc.errMax": "Encounter table: at most {n} encounters.",
+ "s3.encEd": "Apply the edited encounter tables ({n})"
 }

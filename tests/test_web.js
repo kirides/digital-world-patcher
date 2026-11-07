@@ -8,7 +8,7 @@ const [romDir, rel, scratch] = process.argv.slice(2);
 const WEB = path.join(__dirname, '..', 'web'), core = fs.readFileSync(path.join(WEB, 'core.js'), 'utf8');
 global.DW_META = JSON.parse(fs.readFileSync(path.join(WEB, 'data', 'meta.json'), 'utf8'));
 const atob = s => Buffer.from(s, 'base64').toString('binary');
-const api = new Function('atob', 'fetch', core + '; return { loadModel, ndsFiles, records, icon, encounterTable, sectorThumb, patchRom, presetState, reachable, exportJSON, importJSON, META, INLINE, b64 };')(atob, null);
+const api = new Function('atob', 'fetch', core + '; return { loadModel, ndsFiles, records, icon, encounterTable, exportJSON, importEncounters, sectorThumb, patchRom, presetState, reachable, exportJSON, importJSON, META, INLINE, b64 };')(atob, null);
 const rd = p => new Uint8Array(fs.readFileSync(p));
 global.localStorage = { getItem: () => null, setItem() {} }; global.document = { addEventListener() {} };
 const SDAT = new Function(fs.readFileSync(path.join(WEB, 'sound.js'), 'utf8') + '; return SDAT;')();
@@ -47,9 +47,19 @@ for (const [game, enFile, deName] of games) {
   console.log(`     icons ${icons}/${mE.dex.length} in ${Date.now() - t0} ms`);
   { // encounter lookup: the preview with the mod equals the encounters of the patched ROM; every sector has a thumbnail
     const pre = game === 'ds' ? 'ds-offline' : 'dawn-dusk-offline', P = api.patchRom(E, mE, { tr: null, enc: true, evo: api.presetState(mE, pre) }, null);
-    const strip = T => JSON.stringify(T.map(S => S.variants.map(v => v.map(f => [f.mons, f.p.toFixed(4), f.lv]))));
+    const strip = T => JSON.stringify(T.map(S => S.variants.map(v => v.forms.map(f => [f.mons, f.p.toFixed(4), f.lv]))));
     const T = api.encounterTable(mE, E, true), fP = api.ndsFiles(P), TP = api.encounterTable({ ...mE, files: fP, ec: game === 'ds' ? api.records(P, fP, 'ec', 102) : [] }, P, false);
-    check(game + `: encounter lookup, ${T.length} sectors, mod preview = patched ROM`, () => strip(T) === strip(TP) && T.some(S => S.variants.some(v => v.some(f => f.added))), r => r === true);
+    check(game + `: encounter lookup, ${T.length} sectors, mod preview = patched ROM`, () => strip(T) === strip(TP) && T.some(S => S.variants.some(v => v.forms.some(f => f.added))), r => r === true);
+    { // encounter editor: change a table (DS: 2 formations, Dawn/Dusk: one more entry), patch, read it back
+      const T0 = T[0].variants[0], ed = {};
+      ed[T0.key] = game === 'ds' ? [{ p: 0.6, pos: [0xFFFF, 0xFFFF, mE.dex[3], 0xFFFF, 0xFFFF] }, { p: 0.4, pos: [0xFFFF, mE.dex[4], 0xFFFF, mE.dex[5], 0xFFFF] }]
+        : [...T0.forms.map(f => ({ mons: f.mons, mid: f.mid, w: f.w, lv: f.lv, item: f.item })), { mons: [mE.dex[7]], mid: T0.forms[0].mid, w: 50, lv: 9, item: 0xFFFF }];
+      const Q = api.patchRom(E, mE, { tr: null, enc: true, evo: null, encEdits: ed }, null), fQ = api.ndsFiles(Q);
+      const TQ = api.encounterTable({ ...mE, files: fQ, ec: game === 'ds' ? api.records(Q, fQ, 'ec', 102) : [] }, Q, false);
+      const got = TQ.flatMap(S => S.variants).find(v => v.key === T0.key).forms.map(f => [f.mons, f.p.toFixed(3), f.lv || 0]);
+      const want = api.encounterTable(mE, E, true, ed).flatMap(S => S.variants).find(v => v.key === T0.key).forms.map(f => [f.mons, f.p.toFixed(3), f.lv || 0]);
+      check(game + ': edited encounter table is patched', () => JSON.stringify(got) === JSON.stringify(want) && JSON.stringify(api.importEncounters(mE, api.exportJSON(mE, orig, ed))) === JSON.stringify(ed), r => r === true);
+      if (game === 'ds') check('ds: encounter table must add up to 100 %', () => api.patchRom(E, mE, { tr: null, enc: false, evo: null, encEdits: { [T0.key]: [{ p: 0.5, pos: [0xFFFF, 0xFFFF, mE.dex[3], 0xFFFF, 0xFFFF] }] } }, null), /enc.errSum/); }
     check(game + ': every sector has a thumbnail', () => T.filter(S => !api.sectorThumb(E, mE, S.thumb)).map(S => S.id), r => r.length === 0); }
   if (game !== 'ds') {
     const G = game[0].toUpperCase() + game.slice(1), off = api.presetState(mE, 'dawn-dusk-offline'), offD = api.presetState(mD, 'dawn-dusk-offline');

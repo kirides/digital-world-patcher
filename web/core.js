@@ -237,48 +237,78 @@ function wildCopyFiles(model, d, files) {   // Dawn/Dusk: same as tools/mod.py w
   return out;
 }
 // ---- encounter lookup: every random encounter of the ROM, grouped by sector, optionally with the mod's additions
-function encounterTable(model, rom, withMod) {
-  const G = G_(model), areaOf = {}, out = [];
+// sections: [{id, area, part, thumb, variants: [table]}], table = {key, forms}; key = DS record index | Dawn/Dusk file path.
+// forms: DS {p, pos[5] (0xFFFF = empty), mons, added}; Dawn/Dusk {mons:[species], w (weight), lv, item, mid[8], added, hide, p}
+// edits: {key: forms} replace a table (encounter editor), applied on top of the mod when withMod is set
+function encounterTable(model, rom, withMod, edits) {
+  const G = G_(model), areaOf = {}, out = []; edits = edits || {};
   (G.encAreas || []).forEach((a, k) => a.ids.forEach((id, j) => areaOf[id] = [k, j + 1]));
   if (model.game === 'ds') {           // one section per field map (G.encMaps: map, records, distance from the teleporter)
     const mod = {}; if (withMod) for (const [p, o, b] of encounterEdits(model)) mod[p + ':' + o] = b;
-    const forms = k => { const { path, off, rec } = model.ec[k], orig = new Uint16Array(rec.slice().buffer), m = mod[path + ':' + off];
-      const u = m ? new Uint16Array(m.slice().buffer) : orig, out = [];
+    const table = k => { const { path, off, rec } = model.ec[k], orig = new Uint16Array(rec.slice().buffer), m = mod[path + ':' + off];
+      const u = m ? new Uint16Array(m.slice().buffer) : orig, forms = [];
       for (let s = 0; s < 8; s++) { const pr = u[3 + 6 * s]; if (pr === 0 || pr === 0xFFFF) continue;
-        out.push({ p: pr / 10000, mons: [...u.subarray(4 + 6 * s, 9 + 6 * s)].filter(x => x !== 0xFFFF), added: orig[3 + 6 * s] === 0 || orig[3 + 6 * s] === 0xFFFF }); }
-      return out; };
+        const pos = [...u.subarray(4 + 6 * s, 9 + 6 * s)];
+        forms.push({ p: pr / 10000, pos, mons: pos.filter(x => x !== 0xFFFF), added: orig[3 + 6 * s] === 0 || orig[3 + 6 * s] === 0xFFFF }); }
+      return { key: k, forms: edits[k] ? edits[k].map(x => ({ ...x, mons: x.pos.filter(y => y !== 0xFFFF) })) : forms, edited: !!edits[k] }; };
     for (const M of G.encMaps || []) {
       const variants = [];
-      for (const k of M.recs) { if (!model.ec[k]) continue; const f = forms(k), key = JSON.stringify(f);
-        if (f.length && !variants.some(v => JSON.stringify(v) === key)) variants.push(f); }
+      for (const k of M.recs) { if (!model.ec[k]) continue; const T = table(k), key = JSON.stringify(T.forms.map(x => [x.p, x.mons]));
+        if (T.forms.length && !variants.some(v => JSON.stringify(v.forms.map(x => [x.p, x.mons])) === key)) variants.push(T); }
       if (variants.length) out.push({ id: 'm' + M.map, area: M.area, part: M.depth, map: M.map, thumb: { map: M.map, dir: 'MAP' }, variants });
     }
     return out;
-  } else {
-    const f = model.files, dv = dvOf(rom), [es, ee] = f['dat/ec/enctbl.bin'], copies = withMod ? wildCopyFiles(model, rom, f) : {};
-    const byFile = {};
-    for (let m = 0; es + 8 * m + 8 <= ee; m++) {
-      const a = dv.getUint16(es + 8 * m, true), e = dv.getUint16(es + 8 * m + 2, true), path = 'dat/ec/e' + String(e).padStart(3, '0') + '.bin';
-      if (a === 0xFFFF || !f[path]) continue;
-      const S = byFile[e] || (byFile[e] = { id: e, path, areas: [], maps: [] });
-      if (!S.areas.includes(a)) S.areas.push(a); S.maps.push(m);
-    }
-    const locked = new Set(G.lockedAreas || []);
-    for (const S of Object.values(byFile)) {
-      const b = copies[S.path] || rom.subarray(f[S.path][0], f[S.path][1]), d = dvOf(b), n = d.getUint16(0, true);
-      const n0 = dv.getUint16(f[S.path][0], true), list = [];
-      for (let k = 0; k < n; k++) list.push({ mons: [d.getUint16(16 + 24 * k, true)], w: d.getUint16(34 + 24 * k, true), lv: d.getUint16(36 + 24 * k, true), added: k >= n0 });
-      for (let k = list.length; k--;) if (!model.names[list[k].mons[0]]) list.splice(k, 1);
-      if (!list.some(x => x.lv)) continue;          // files without levels are no random encounters
-      const sum = list.reduce((x, y) => x + y.w, 0) || 1; list.forEach(x => { x.p = x.w / sum; delete x.w; });
-      const a = areaOf[S.areas[0]];
-      out.push({ id: S.id, cyber: S.id === G.cyber, area: S.id === G.cyber ? -2 : a ? a[0] : -1, part: 0, areas: S.areas,
-        locked: S.areas.every(x => locked.has(x)), thumb: { map: S.maps[0] }, variants: [list] });
-    }
-    const cnt = {}; out.sort((x, y) => x.id - y.id).forEach(S => { if (S.area >= 0) S.part = cnt[S.area] = (cnt[S.area] || 0) + 1; else S.part = S.areas[0]; });
   }
+  const f = model.files, dv = dvOf(rom), [es, ee] = f['dat/ec/enctbl.bin'], copies = withMod ? wildCopyFiles(model, rom, f) : {};
+  const byFile = {};
+  for (let m = 0; es + 8 * m + 8 <= ee; m++) {
+    const a = dv.getUint16(es + 8 * m, true), e = dv.getUint16(es + 8 * m + 2, true), path = 'dat/ec/e' + String(e).padStart(3, '0') + '.bin';
+    if (a === 0xFFFF || !f[path]) continue;
+    const S = byFile[e] || (byFile[e] = { id: e, path, areas: [], maps: [] });
+    if (!S.areas.includes(a)) S.areas.push(a); S.maps.push(m);
+  }
+  const locked = new Set(G.lockedAreas || []);
+  for (const S of Object.values(byFile)) {
+    const b = copies[S.path] || rom.subarray(f[S.path][0], f[S.path][1]), d = dvOf(b), n = d.getUint16(0, true);
+    const n0 = dv.getUint16(f[S.path][0], true), u = k => d.getUint16(16 + 24 * k, true);
+    let list = [];
+    for (let k = 0; k < n; k++) { const q = 16 + 24 * k, g = o => d.getUint16(q + o, true);
+      list.push({ mons: [g(0)], mid: [1, 2, 3, 4, 5, 6, 7, 8].map(x => g(2 * x)), w: g(18), lv: g(20), item: g(22), added: k >= n0 }); }
+    if (!list.some(x => x.lv)) continue;          // files without levels are no random encounters
+    if (edits[S.path]) list = clone(edits[S.path]);
+    list.forEach(x => x.hide = !model.names[x.mons[0]]);
+    const sum = list.reduce((x, y) => x + (y.hide ? 0 : y.w), 0) || 1; list.forEach(x => x.p = x.w / sum);
+    const a = areaOf[S.areas[0]];
+    out.push({ id: S.id, cyber: S.id === G.cyber, area: S.id === G.cyber ? -2 : a ? a[0] : -1, part: 0, areas: S.areas,
+      locked: S.areas.every(x => locked.has(x)), thumb: { map: S.maps[0] }, variants: [{ key: S.path, forms: list, edited: !!edits[S.path] }] });
+  }
+  const cnt = {}; out.sort((x, y) => x.id - y.id).forEach(S => { if (S.area >= 0) S.part = cnt[S.area] = (cnt[S.area] || 0) + 1; else S.part = S.areas[0]; });
   const ord = S => S.area < 0 ? 1e6 - S.area : S.area * 1000 + S.part;
   return out.sort((x, y) => ord(x) - ord(y));
+}
+const DS_LAYOUT = [null, [2], [1, 3], [1, 2, 3], [0, 1, 3, 4], [0, 1, 2, 3, 4]];   // formation positions the game uses most
+function encodeEncounters(model, out, f, edits) {   // -> write the edited tables into the ROM image `out` (files f)
+  const errs = [];
+  if (model.game === 'ds') {
+    for (const [k, forms] of Object.entries(edits)) {
+      const { path, off, rec } = model.ec[k], u = new Uint16Array(rec.slice().buffer);
+      if (forms.length > 8) errs.push(tr('enc.errMax', { n: 8 }));
+      const sum = Math.round(forms.reduce((x, y) => x + y.p * 10000, 0));
+      if (sum !== 10000) errs.push(tr('enc.errSum', { sum: (sum / 100).toFixed(2) }));
+      for (let s = 0; s < 8; s++) u.set(s < forms.length ? [Math.round(forms[s].p * 10000), ...forms[s].pos] : [0, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF], 3 + 6 * s);
+      const [s0, e0] = f[path]; out.set(new Uint8Array(u.buffer), s0 + off);
+    }
+    return errs;
+  }
+  const files = [];
+  for (const [path, forms] of Object.entries(edits)) {
+    const [s0, e0] = f[path], old = out.subarray(s0, e0), nb = new Uint8Array(16 + 24 * forms.length + 4);
+    nb.set(old.subarray(0, 16)); const d = dvOf(nb); d.setUint16(0, forms.length, true);
+    forms.forEach((x, k) => { const q = 16 + 24 * k; [x.mons[0], ...x.mid, x.w, x.lv, x.item].forEach((v, j) => d.setUint16(q + 2 * j, v, true)); });
+    files.push([path, nb]);
+  }
+  writeFiles(out, f, files);
+  return errs;
 }
 function rgb555(v) { return [(v & 31) * 255 / 31 | 0, (v >> 5 & 31) * 255 / 31 | 0, (v >> 10 & 31) * 255 / 31 | 0]; }
 function drawTiles(img, W, H, tiles, bpp, pal, map, w, skip0, blocks) {   // 8x8 tile map onto an RGBA buffer
@@ -341,7 +371,7 @@ function writeFiles(d, files, list) {   // same algorithm as tools/ndsfs.py buil
   let used = 0; for (let i = 0; i < fsz; i++) used = Math.max(used, dv.getUint32(fat + 8 * i + 4, true));
   dv.setUint32(0x80, used, true); dv.setUint16(0x15E, crc16(d, 0x15E), true);
 }
-function patchRom(rom, model, opt, bps) {  // opt: {tr: language code|null, enc, evo: state|null}; bps: that translation patch
+function patchRom(rom, model, opt, bps) {  // opt: {tr: language code|null, enc, evo: state|null, encEdits}; bps: that translation patch
   if (model.lang !== 'en' && opt.tr) throw new Error(tr('err.already'));
   const out = opt.tr ? applyBPS(rom, bps) : rom.slice();
   const f = ndsFiles(out), put = (path, off, bytes) => { const [s, e] = f[path]; if (s + off + bytes.length > e) throw new Error(tr('err.file', { file: path })); out.set(bytes, s + off); };
@@ -349,6 +379,7 @@ function patchRom(rom, model, opt, bps) {  // opt: {tr: language code|null, enc,
   if (opt.evo) { const errs = validate(model, opt.evo); if (errs.length) throw new Error(errs.slice(0, 5).join('\n'));
     opt.evo.forEach((e, i) => { if (changed(model, opt.evo, i)) put(model.sk[i].path, model.sk[i].off, encodeRecord(model, opt.evo, i)); }); }
   if (opt.enc && G_(model).wildCopy) writeFiles(out, f, Object.entries(wildCopyFiles(model, out, f)));
+  if (opt.encEdits && Object.keys(opt.encEdits).length) { const errs = encodeEncounters(model, out, ndsFiles(out), opt.encEdits); if (errs.length) throw new Error([...new Set(errs)].join('\n')); }
   return out;
 }
 async function translationPatch(model, lang) {   // patches/<file>.bps for the loaded game, or inlined in the single-file build
@@ -357,10 +388,21 @@ async function translationPatch(model, lang) {   // patches/<file>.bps for the l
   const r = await fetch('patches/' + encodeURIComponent(name)); if (!r.ok) throw new Error(tr('err.patch', { file: name }));
   return new Uint8Array(await r.arrayBuffer());
 }
-function exportJSON(model, st) {
+function exportJSON(model, st, enc) {   // enc: edited encounter tables (optional)
   const routes = {};
   st.forEach((e, i) => { if (changed(model, st, i)) routes[i] = { name: model.names[i], s: e.s, p: e.p }; });
-  return JSON.stringify({ format: 'dw-digivolution', version: 1, game: model.game, routes }, null, 1);
+  const j = { format: 'dw-digivolution', version: 1, game: model.game, routes };
+  if (enc && Object.keys(enc).length) j.encounters = enc;
+  return JSON.stringify(j, null, 1);
+}
+function importEncounters(model, text) {   // the 'encounters' part of an export, or null
+  const j = JSON.parse(text); if (!j.encounters) return null;
+  for (const [k, forms] of Object.entries(j.encounters)) {
+    const ok = Array.isArray(forms) && (model.game === 'ds' ? !!model.ec[k] && forms.every(f => typeof f.p === 'number' && Array.isArray(f.pos) && f.pos.length === 5)
+      : !!model.files[k] && /^dat\/ec\/e\d+\.bin$/.test(k) && forms.every(f => Array.isArray(f.mons) && Array.isArray(f.mid) && f.mid.length === 8));
+    if (!ok) throw new Error(tr('err.jsonFormat', { id: k }));
+  }
+  return j.encounters;
 }
 function importJSON(model, text) {   // applied on top of the ROM's own table
   const j = JSON.parse(text);

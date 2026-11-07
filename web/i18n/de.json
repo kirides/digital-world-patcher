@@ -128,5 +128,20 @@
  "enc.show": "Im Editor zeigen: {name}",
  "enc.tele": "Teleporter-Karte",
  "enc.mapN": "{n}. Karte nach dem Teleporter",
- "enc.mapOther": "weitere Karte"
+ "enc.mapOther": "weitere Karte",
+ "enc.edit": "Bearbeiten",
+ "enc.done": "Fertig",
+ "enc.add": "Begegnung",
+ "enc.del": "Begegnung entfernen",
+ "enc.delMon": "Digimon entfernen",
+ "enc.addMon": "Digimon hinzufügen",
+ "enc.reset": "Original",
+ "enc.sum": "Summe {sum}",
+ "enc.weight": "Gewicht",
+ "enc.weightHint": "Anteil = Gewicht / Summe aller Gewichte",
+ "enc.lvShort": "Lv",
+ "enc.shared": "Diese Tabelle gilt für {n} Karten.",
+ "enc.errSum": "Begegnungstabelle: die Anteile ergeben {sum} %, nötig sind 100 %.",
+ "enc.errMax": "Begegnungstabelle: höchstens {n} Begegnungen.",
+ "s3.encEd": "Geänderte Begegnungstabellen übernehmen ({n})"
 }

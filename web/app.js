@@ -155,17 +155,18 @@ drop.ondragleave = () => drop.classList.remove('over');
 drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && loadFile(e.dataTransfer.files[0]); };
 $('q').oninput = refresh; $('onlychg').onchange = refresh; $('enc').onchange = refresh;
 $('apply').onclick = () => { st = presetState(model, $('preset').value); if (G.encounters || G.wildCopy) $('enc').checked = $('preset').value !== 'orig'; refresh(); };
-$('exp').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([exportJSON(model, st)], { type: 'application/json' })); a.download = 'digivolutions-' + model.game + '.json'; a.click(); };
+$('exp').onclick = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([exportJSON(model, st, ENC.ed)], { type: 'application/json' })); a.download = 'digivolutions-' + model.game + '.json'; a.click(); };
 $('impb').onclick = () => $('imp').click();
-$('imp').onchange = async e => { try { st = importJSON(model, await e.target.files[0].text()); refresh(); } catch (err) { alert(err.message); } e.target.value = ''; };
+$('imp').onchange = async e => { try { const txt = await e.target.files[0].text(); st = importJSON(model, txt); const ee = importEncounters(model, txt); if (ee) { ENC.ed = ee; encBuild(); } refresh(); } catch (err) { alert(err.message); } e.target.value = ''; };
 $('go').onclick = async () => {
   const trc = model.lang === 'en' ? ((document.querySelector('input[name=tr]:checked') || {}).value || null) : null;
   const enc = $('enc').checked && !!(G.encounters || G.wildCopy), evo = $('evo').checked && st.some((x, i) => changed(model, st, i)) ? st : null;
   try {
     $('msg').textContent = t('s3.working'); $('msg').className = ''; digivolveFx();
-    const out = patchRom(rom, model, { tr: trc, enc, evo }, trc ? await translationPatch(model, trc) : null);
+    const encEdits = $('enced').checked ? ENC.ed : null;
+    const out = patchRom(rom, model, { tr: trc, enc, evo, encEdits }, trc ? await translationPatch(model, trc) : null);
     const trName = trc ? G.translations[trc].name : model.lang !== 'en' ? ((G.translations || {})[model.lang] || {}).name : null;
-    const tags = [trName, (enc || evo) && 'Mod'].filter(Boolean);
+    const tags = [trName, (enc || evo || (encEdits && Object.keys(encEdits).length)) && 'Mod'].filter(Boolean);
     const name = G.title + (tags.length ? ' (' + tags.join(' + ') + ')' : '') + '.nds';
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([out])); a.download = name; a.click();
     $('msg').textContent = t('s3.done', { file: name }); $('msg').className = 'ok';
@@ -173,54 +174,107 @@ $('go').onclick = async () => {
 };
 
 // ---- encounter lookup: sectors of the loaded ROM with thumbnails, the searched Digimon's rate, every encounter
-const ENC = { mon: null, table: null, thumbs: {}, obs: null, vars: {} };
-const pct = p => (p * 100).toFixed(p * 100 < 10 && p * 100 % 1 ? 1 : 0).replace('.', LANG === 'de' ? ',' : '.') + ' %';
+const ENC = { mon: null, table: null, thumbs: {}, obs: null, vars: {}, ed: {}, editing: null, open: new Set() };
+const pct = p => (p * 100).toFixed(p * 100 < 10 && p * 100 % 1 ? 1 : 0).replace('.', LANG === 'de' ? ',' : '.') + ' %';
+const DS = () => model.game === 'ds';
 function encSetup() {
   const has = !!(G.encounters || G.wildCopy), mod = Object.values(G.presetNames || {})[0];
   $('encmodlab').classList.toggle('hide', !has); $('encmod').checked = has && $('enc').checked;
   $('encmodtext').textContent = mod ? t('enc.mod', { mod: L(mod) }) : '';
-  ENC.thumbs = {}; ENC.vars = {}; ENC.mon = null; encBuild();
+  ENC.thumbs = {}; ENC.vars = {}; ENC.ed = {}; ENC.editing = null; ENC.open = new Set(); ENC.mon = null; encBuild();
 }
-function encBuild() { ENC.table = encounterTable(model, rom, $('encmod').checked); encRender(); }
+function encBuild() { ENC.table = encounterTable(model, rom, $('encmod').checked, ENC.ed); encRender(); encEditsUI(); }
 function secName(S) {
   if (S.cyber) return [t('enc.cyber'), t('enc.cyberSub')];
   if (S.area < 0) return [t('enc.area', { n: S.part }), ''];
   if (S.map !== undefined) return [L(G.encAreas[S.area].name), S.part === 0 ? t('enc.tele') : S.part === null ? t('enc.mapOther') : t('enc.mapN', { n: S.part })];
   return [L(G.encAreas[S.area].name), t('enc.part', { n: S.part })];
 }
+const shown = T => T.forms.filter(f => !f.hide);
 function monRate(S, i) {   // share of battles with this Digimon, per variant
-  return S.variants.map(v => v.reduce((x, f) => x + (f.mons.includes(i) ? f.p : 0), 0));
+  return S.variants.map(v => shown(v).reduce((x, f) => x + (f.mons.includes(i) ? f.p : 0), 0));
+}
+// ---- encounter editor: edits are whole tables (ENC.ed[key]), patched in step 3, shareable in the JSON export
+const plain = forms => forms.map(f => DS() ? { p: f.p, pos: f.pos.slice() } : { mons: [f.mons[0]], mid: f.mid.slice(), w: f.w, lv: f.lv, item: f.item });
+function encChange(T, fn) { const forms = plain(T.forms); fn(forms); ENC.ed[T.key] = forms; encBuild(); }
+function setMons(f, mons) {         // DS: keep the old positions when the count stays, else the game's usual layout
+  const old = (f.pos || []).map((x, k) => x !== 0xFFFF ? k : -1).filter(k => k >= 0), at = old.length === mons.length ? old : DS_LAYOUT[mons.length];
+  f.pos = [0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF]; mons.forEach((m, k) => f.pos[at[k]] = m);
+}
+const monsOf = f => f.pos.filter(x => x !== 0xFFFF);
+function editRows(S, T) {
+  const ds = DS(), rows = T.forms.map((f, k) => f.hide ? '' : `<div class="form edit" data-k="${k}"><div class="mons">${f.mons.map((m, j) =>
+      `<span class="em">${pickBtn(m, `data-a="mon" data-j="${j}"`)}${ds && f.mons.length > 1 ? `<button type="button" class="ghost x" data-a="delmon" data-j="${j}" title="${esc(t('enc.delMon'))}">×</button>` : ''}</span>`).join('')}
+      ${ds && f.mons.length < 5 ? `<button type="button" class="ghost" data-a="addmon" title="${esc(t('enc.addMon'))}">+</button>` : ''}</div>
+      ${ds ? '' : `<label class="num">${t('enc.lvShort')}<input type="number" min="1" max="99" data-a="lv" value="${f.lv}"></label>`}
+      <label class="num">${ds ? '%' : t('enc.weight')}<input type="number" min="0" ${ds ? 'step="0.01" max="100"' : 'max="65535"'} data-a="p" value="${ds ? +(f.p * 100).toFixed(2) : f.w}"></label>
+      ${ds ? '' : `<span class="pct">${pct(f.p)}</span>`}
+      <button type="button" class="ghost x" data-a="del" title="${esc(t('enc.del'))}">🗑</button></div>`).join('');
+  const sum = T.forms.reduce((x, f) => x + (f.hide ? 0 : f.p), 0), bad = ds && Math.round(sum * 10000) !== 10000;
+  const full = ds && T.forms.length >= 8, shared = ds ? ENC.table.filter(X => X.variants.some(v => v.key === T.key)).length : 1;
+  return rows + `<div class="edfoot"><button type="button" class="ghost" data-a="add"${full ? ' disabled' : ''}>＋ ${t('enc.add')}</button>
+    ${ds ? `<span class="${bad ? 'err' : 'ok'}">${t('enc.sum', { sum: pct(sum) })}</span>` : `<span class="mut">${t('enc.weightHint')}</span>`}
+    <span class="grow"></span>${T.edited ? `<button type="button" class="ghost" data-a="reset">${t('enc.reset')}</button>` : ''}
+    <button type="button" data-a="done">${t('enc.done')}</button></div>${shared > 1 ? `<p class="mut">${t('enc.shared', { n: shared })}</p>` : ''}`;
 }
 function encRender() {
   const i = ENC.mon;
   $('encpick').innerHTML = i === null ? `<span class="ico"></span><span class="mut">${t('enc.pick')}</span>` : img(i) + '<span>' + N(i) + '</span>';
   $('encall').classList.toggle('hide', i === null);
   let list = ENC.table.map(S => ({ S, r: i === null ? null : monRate(S, i) }));
-  if (i !== null) list = list.filter(x => Math.max(...x.r) > 0).sort((a, b) => (a.S.locked - b.S.locked) || Math.max(...b.r) - Math.max(...a.r));   // other version's dungeons last
+  if (i !== null) list = list.filter(x => Math.max(...x.r) > 0 || x.S.id === ENC.editing).sort((a, b) => (a.S.locked - b.S.locked) || Math.max(...b.r) - Math.max(...a.r));   // other version's dungeons last
   $('encsum').innerHTML = i === null ? t('enc.allCount', { n: list.length })
     : list.length ? t('enc.count', { name: esc(N(i)), n: list.length }) : t('enc.countNone', { name: esc(N(i)), mod: $('encmod').checked ? '' : t('enc.modOff') });
   $('enclist').innerHTML = '<div class="secs">' + list.map(({ S, r }) => {
-    const [name, sub] = secName(S), key = S.id, v = ENC.vars[key] || 0, forms = S.variants[v];
-    const lo = r && Math.min(...r), hi = r && Math.max(...r);
-    const uniq = [...new Set(S.variants.flatMap(v => v.flatMap(f => f.mons)))];
+    const [name, sub] = secName(S), key = S.id, v = Math.min(ENC.vars[key] || 0, S.variants.length - 1), T = S.variants[v], forms = shown(T);
+    const lo = r && Math.min(...r), hi = r && Math.max(...r), editing = ENC.editing === key;
+    const uniq = [...new Set(S.variants.flatMap(v => shown(v).flatMap(f => f.mons)))];
     const rate = r ? `<div class="rate">${lo === hi ? pct(hi) : pct(lo) + '–' + pct(hi)}</div>`
       : `<div class="peek">${uniq.slice(0, 12).map(m => img(m)).join('')}${uniq.length > 12 ? `<span class="mut">+${uniq.length - 12}</span>` : ''}</div>`;
     const lock = S.locked ? `<span class="tag lock">${t('enc.locked', { game: G.otherVersion })}</span>` : '';
+    const chg = S.variants.some(x => x.edited) ? `<span class="tag">${t('ed.changed')}</span>` : '';
     const vars = S.variants.length > 1 ? `<p class="mut">${t('enc.variants', { n: S.variants.length })}</p><div class="vars">${S.variants.map((_, k) =>
       `<button type="button" class="ghost${k === v ? ' on' : ''}" data-var="${k}">${t('enc.variant', { n: k + 1 })}${r ? ' · ' + pct(r[k]) : ''}</button>`).join('')}</div>` : '';
-    const rows = forms.slice().sort((a, b) => b.p - a.p).map(f => `<div class="form${i !== null && f.mons.includes(i) ? ' me' : ''}"><div class="mons">${f.mons.map(m =>
+    const rows = editing ? editRows(S, T) : forms.slice().sort((a, b) => b.p - a.p).map(f => `<div class="form${i !== null && f.mons.includes(i) ? ' me' : ''}"><div class="mons">${f.mons.map(m =>
       `<span data-mon="${m}" title="${esc(t('enc.show', { name: N(m) }))}">${img(m)}${esc(N(m))}</span>`).join('')}${f.added ? `<span class="tag">${t('enc.added')}</span>` : ''}</div>` +
-      (f.lv ? `<span class="lv">${t('enc.lv', { n: f.lv })}</span>` : '') + `<span class="pct">${pct(f.p)}</span></div>`).join('');
-    return `<div class="sec${r ? ' hit' : ''}" data-sec="${key}"><div class="sec-top"><img class="thumb" alt="" data-thumb='${JSON.stringify(S.thumb)}'>
-      <div class="sec-h"><b>${esc(name)}</b><span class="mut">${esc(sub)}</span> ${lock}${rate}</div></div>
-      <details${i !== null ? ' open' : ''}><summary>${t('enc.list', { n: forms.length })}</summary>${vars}<div class="forms">${rows}</div></details></div>`;
+      (f.lv ? `<span class="lv">${t('enc.lv', { n: f.lv })}</span>` : '') + `<span class="pct">${pct(f.p)}</span></div>`).join('') +
+      `<div class="edfoot"><span class="grow"></span><button type="button" class="ghost" data-a="edit">✎ ${t('enc.edit')}</button></div>`;
+    return `<div class="sec${r ? ' hit' : ''}${editing ? ' editing' : ''}" data-sec="${key}"><div class="sec-top"><img class="thumb" alt="" data-thumb='${JSON.stringify(S.thumb)}'>
+      <div class="sec-h"><b>${esc(name)}</b><span class="mut">${esc(sub)}</span> ${lock}${chg}${rate}</div></div>
+      <details${i !== null || editing || ENC.open.has(String(key)) ? ' open' : ''}><summary>${t('enc.list', { n: forms.length })}</summary>${vars}<div class="forms">${rows}</div></details></div>`;
   }).join('') + '</div>';
-  const box = $('enclist');
-  box.querySelectorAll('[data-var]').forEach(b => b.onclick = () => { ENC.vars[b.closest('.sec').dataset.sec] = +b.dataset.var; encRender(); });
+  const box = $('enclist'), secOf = el => { const id = el.closest('.sec').dataset.sec, S = ENC.table.find(X => String(X.id) === id); return [S, S.variants[Math.min(ENC.vars[S.id] || 0, S.variants.length - 1)]]; };
+  box.querySelectorAll('details').forEach(d => d.ontoggle = () => { const id = d.closest('.sec').dataset.sec; d.open ? ENC.open.add(id) : ENC.open.delete(id); });
+  box.querySelectorAll('[data-var]').forEach(b => b.onclick = () => { const [S] = secOf(b); ENC.vars[S.id] = +b.dataset.var; encRender(); });
   box.querySelectorAll('[data-mon]').forEach(el => el.onclick = () => { cur = +el.dataset.mon; refresh(); $('ed').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  box.querySelectorAll('[data-a]').forEach(el => {
+    const a = el.dataset.a, row = el.closest('[data-k]'), k = row ? +row.dataset.k : -1, j = +el.dataset.j;
+    const [S, T] = secOf(el), ev = a === 'p' || a === 'lv' ? 'onchange' : 'onclick';
+    el[ev] = () => {
+      if (a === 'edit') { ENC.editing = S.id; return encRender(); }
+      if (a === 'done') { ENC.editing = null; return encRender(); }
+      if (a === 'reset') { delete ENC.ed[T.key]; return encBuild(); }
+      if (a === 'mon') return openPick(el, false, m => encChange(T, F => { if (DS()) { const ms = monsOf(F[k]); ms[j] = m; setMons(F[k], ms); } else F[k].mons = [m]; }));
+      if (a === 'addmon') return openPick(el, false, m => encChange(T, F => setMons(F[k], [...monsOf(F[k]), m])));
+      encChange(T, F => {
+        if (a === 'delmon') { const ms = monsOf(F[k]); ms.splice(j, 1); setMons(F[k], ms); }
+        else if (a === 'del') F.splice(k, 1);
+        else if (a === 'p') { if (DS()) F[k].p = Math.max(0, Math.min(100, +el.value || 0)) / 100; else F[k].w = Math.max(0, Math.min(65535, Math.round(+el.value || 0))); }
+        else if (a === 'lv') F[k].lv = Math.max(1, Math.min(99, Math.round(+el.value || 1)));
+        else if (a === 'add') { const m = ENC.mon ?? DEX[0];
+          if (DS()) { const f = { p: 0 }; setMons(f, [m]); F.push(f); }
+          else { const b = F.find(x => model.names[x.mons[0]]) || F[0]; F.push({ mons: [m], mid: b ? b.mid.slice() : Array(8).fill(3200), w: 10, lv: b ? b.lv : 1, item: 0xFFFF }); } }
+      });
+    };
+  });
   if (ENC.obs) ENC.obs.disconnect();      // thumbnails are drawn when they scroll into view
   ENC.obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { ENC.obs.unobserve(e.target); drawThumb(e.target); } }), { rootMargin: '200px' });
   box.querySelectorAll('img[data-thumb]').forEach(el => ENC.obs.observe(el));
+}
+function encEditsUI() {   // step 3: apply the edited tables
+  const n = Object.keys(ENC.ed).length;
+  $('encedlab').classList.toggle('hide', !n); $('encedtext').textContent = t('s3.encEd', { n });
+  if (n && !ENC.wasEdited) $('enced').checked = true; ENC.wasEdited = !!n;
 }
 function drawThumb(el) {
   const k = el.dataset.thumb;
