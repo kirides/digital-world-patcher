@@ -110,10 +110,10 @@
  "enc.pick": "Digimon suchen …",
  "enc.all": "Alle Gebiete",
  "enc.mod": "mit Ergänzungen des Mods „{mod}“",
- "enc.count": "{name} begegnet dir in {n} Abschnitten (Zufallsbegegnungen).",
+ "enc.count": "{name} begegnet dir an {n} Orten (Zufallsbegegnungen).",
  "enc.countNone": "{name} kommt in keiner Zufallsbegegnung vor{mod}. Es entsteht nur durch Digitation, Eier oder Ereignisse.",
  "enc.modOff": " (ohne Mod)",
- "enc.allCount": "{n} Abschnitte mit Zufallsbegegnungen. Wähle ein Digimon, um nur seine Fundorte zu sehen.",
+ "enc.allCount": "{n} Orte mit Zufallsbegegnungen. Wähle ein Digimon, um nur seine Fundorte zu sehen.",
  "enc.list": "Alle Begegnungen ({n})",
  "enc.variant": "Variante {n}",
  "enc.variants": "Die Begegnungen hier wechseln mit Starter und Spielfortschritt ({n} Varianten).",
@@ -125,5 +125,8 @@
  "enc.lv": "Lv {n}",
  "enc.added": "Mod",
  "enc.where": "Fundorte",
- "enc.show": "Im Editor zeigen: {name}"
+ "enc.show": "Im Editor zeigen: {name}",
+ "enc.tele": "Teleporter-Karte",
+ "enc.mapN": "{n}. Karte nach dem Teleporter",
+ "enc.mapOther": "weitere Karte"
 }

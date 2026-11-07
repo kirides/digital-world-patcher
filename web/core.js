@@ -240,20 +240,20 @@ function wildCopyFiles(model, d, files) {   // Dawn/Dusk: same as tools/mod.py w
 function encounterTable(model, rom, withMod) {
   const G = G_(model), areaOf = {}, out = [];
   (G.encAreas || []).forEach((a, k) => a.ids.forEach((id, j) => areaOf[id] = [k, j + 1]));
-  if (model.game === 'ds') {
+  if (model.game === 'ds') {           // one section per field map (G.encMaps: map, records, distance from the teleporter)
     const mod = {}; if (withMod) for (const [p, o, b] of encounterEdits(model)) mod[p + ':' + o] = b;
-    const sec = {};
-    for (const { path, off, rec } of model.ec) {
-      const orig = new Uint16Array(rec.slice().buffer), m = mod[path + ':' + off], u = m ? new Uint16Array(m.slice().buffer) : orig;
-      if (u[2] !== 400) continue;                          // 500: scripted battles (bosses, arena), not random
-      const forms = [];
+    const forms = k => { const { path, off, rec } = model.ec[k], orig = new Uint16Array(rec.slice().buffer), m = mod[path + ':' + off];
+      const u = m ? new Uint16Array(m.slice().buffer) : orig, out = [];
       for (let s = 0; s < 8; s++) { const pr = u[3 + 6 * s]; if (pr === 0 || pr === 0xFFFF) continue;
-        forms.push({ p: pr / 10000, mons: [...u.subarray(4 + 6 * s, 9 + 6 * s)].filter(x => x !== 0xFFFF), added: orig[3 + 6 * s] === 0 || orig[3 + 6 * s] === 0xFFFF }); }
-      if (!forms.length) continue;
-      const S = sec[u[0]] || (sec[u[0]] = { id: u[0], thumb: { ds: u[0] }, variants: [] }), key = JSON.stringify(forms);
-      if (!S.variants.some(v => JSON.stringify(v) === key)) S.variants.push(forms);
+        out.push({ p: pr / 10000, mons: [...u.subarray(4 + 6 * s, 9 + 6 * s)].filter(x => x !== 0xFFFF), added: orig[3 + 6 * s] === 0 || orig[3 + 6 * s] === 0xFFFF }); }
+      return out; };
+    for (const M of G.encMaps || []) {
+      const variants = [];
+      for (const k of M.recs) { if (!model.ec[k]) continue; const f = forms(k), key = JSON.stringify(f);
+        if (f.length && !variants.some(v => JSON.stringify(v) === key)) variants.push(f); }
+      if (variants.length) out.push({ id: 'm' + M.map, area: M.area, part: M.depth, map: M.map, thumb: { map: M.map, dir: 'MAP' }, variants });
     }
-    for (const S of Object.values(sec)) { const a = areaOf[S.id]; S.area = a ? a[0] : -1; S.part = a ? a[1] : S.id; out.push(S); }
+    return out;
   } else {
     const f = model.files, dv = dvOf(rom), [es, ee] = f['dat/ec/enctbl.bin'], copies = withMod ? wildCopyFiles(model, rom, f) : {};
     const byFile = {};
@@ -310,7 +310,7 @@ function sectorThumb(rom, model, thumb) {   // -> {w, h, rgba}: DS battle backgr
     }
     const layers = [];               // two layers; the one with fewer transparent pixels is the bottom one
     for (const L of ['b', 'a']) {      // tie: b is the bottom one
-      const p = 'dat/map/' + thumb.map + L + '.', c = get(p + 'c'), pl = get(p + 'p'), s = get(p + 's'); if (!c || !pl || !s) continue;
+      const p = 'dat/' + (thumb.dir || 'map') + '/' + thumb.map + L + '.', c = get(p + 'c'), pl = get(p + 'p'), s = get(p + 's'); if (!c || !pl || !s) continue;
       const sd = dvOf(s), w = sd.getUint16(0, true), h = sd.getUint16(2, true), pal = [];
       for (let i = 4; i + 1 < pl.length; i += 2) pal.push(rgb555(pl[i] | pl[i + 1] << 8));
       const ly = { w, h, pal, tiles: c.subarray(4), map: new Uint16Array(s.slice(4, 4 + ((s.length - 4) & ~1)).buffer) };

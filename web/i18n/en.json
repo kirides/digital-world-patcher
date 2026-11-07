@@ -110,10 +110,10 @@
  "enc.pick": "Search a Digimon …",
  "enc.all": "All areas",
  "enc.mod": "with the additions of the mod “{mod}”",
- "enc.count": "{name} appears in {n} sections (random encounters).",
+ "enc.count": "{name} appears in {n} places (random encounters).",
  "enc.countNone": "{name} is not a random encounter{mod}. It only comes from digivolution, eggs or events.",
  "enc.modOff": " (without mod)",
- "enc.allCount": "{n} sections with random encounters. Pick a Digimon to see only where it appears.",
+ "enc.allCount": "{n} places with random encounters. Pick a Digimon to see only where it appears.",
  "enc.list": "All encounters ({n})",
  "enc.variant": "Variant {n}",
  "enc.variants": "The encounters here change with your starter and story progress ({n} variants).",
@@ -125,5 +125,8 @@
  "enc.lv": "Lv {n}",
  "enc.added": "Mod",
  "enc.where": "Where to find",
- "enc.show": "Show in the editor: {name}"
+ "enc.show": "Show in the editor: {name}",
+ "enc.tele": "Teleporter map",
+ "enc.mapN": "map {n} after the teleporter",
+ "enc.mapOther": "other map"
 }

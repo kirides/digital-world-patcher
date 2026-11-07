@@ -106,6 +106,63 @@ def enc_areas(layout):
     return [{'name': {'en': en, 'de': de}, 'ids': ids} for en, de, ids in ENC_AREAS[layout]]
 
 
+def ds_enc_maps(nds):
+    """DS: which field map uses which encounter records, in walking order from each dungeon's teleporter map.
+    The event scripts (overlay 3: u32 offset table, one script per location) start with op 0x1D <map>, assign
+    encounter records with op 0xA3 <slot> <record> and move between locations with op 0x39 <u32 script offset>.
+    Location 2 is the city; the dungeon map that warps there holds the dungeon's teleporter."""
+    d = nds.data; ovo, ovs = struct.unpack_from('<2I', d, 0x50)
+    ent = next(struct.unpack_from('<8I', d, ovo + 32 * i) for i in range(ovs // 32) if struct.unpack_from('<I', d, ovo + 32 * i)[0] == 3)
+    s, e = nds.fat[ent[6]]; B = bytes(d[s:e])
+    offs = [struct.unpack_from('<I', B, 4 * i)[0] & ~1 for i in range(struct.unpack_from('<I', B)[0] // 4)]
+    inv = {o: i for i, o in enumerate(offs)}; ends = sorted(set(offs)) + [len(B)]
+    recs = []; k = 0
+    while 'dat/ec/%d' % k in nds.files:
+        b = nds.read('dat/ec/%d' % k); first = struct.unpack_from('<I', b)[0]
+        o = list(struct.unpack_from('<%dI' % (first // 4), b)) + [len(b)]
+        recs += [struct.unpack_from('<3H', b, o[j]) for j in range(len(o) - 1)]; k += 1
+    loc = {}
+    for i, o in enumerate(offs):
+        if o + 20 > len(B) or struct.unpack_from('<H', B, o + 16)[0] != 0x1D: continue
+        end = min(ends[ends.index(o) + 1], len(B)); rr, ww = [], set()
+        for p in range(o, end - 6, 2):
+            w = struct.unpack_from('<H', B, p)[0]
+            if w == 0xA3:
+                sl, rc = struct.unpack_from('<hh', B, p + 2)
+                if 0 <= sl < 16 and 0 <= rc < len(recs) and rc not in rr and recs[rc][2] == 400: rr.append(rc)
+            elif w == 0x39:
+                t = struct.unpack_from('<I', B, p + 2)[0]
+                if t in inv and inv[t] != i: ww.add(inv[t])
+        loc[i] = {'map': struct.unpack_from('<H', B, o + 18)[0], 'recs': rr, 'warps': ww}
+    area_of = {f0: k for k, (_, _, ids) in enumerate(ENC_AREAS['ds']) for f0 in ids}
+    # walking order: connected maps (two-way warps; one-way ones are teleporter shortcuts that open later), counted
+    # from the map with the warp to the city (locations without a field map) = the dungeon's teleporter map
+    two = lambda i, w: w in loc and i in loc[w]['warps']
+    depth, root = {}, {}
+    for st in sorted(i for i in loc if any(w < 9 and w not in loc for w in loc[i]['warps'])):
+        if st in depth: continue
+        depth[st] = 0; root[st] = st; q = [st]
+        while q:
+            i = q.pop(0)
+            for w in sorted(loc[i]['warps']):
+                if w not in depth and two(i, w): depth[w] = depth[i] + 1; root[w] = st; q.append(w)
+    used = {}                          # a record set by many scripts (171) is a default, not the map's own table
+    for L in loc.values():
+        for r in L['recs']: used[r] = used.get(r, 0) + 1
+    for L in loc.values(): L['recs'] = [r for r in L['recs'] if used[r] < 6]
+    out = []
+    for i, L in loc.items():
+        votes = [area_of[recs[r][0]] for r in L['recs'] if recs[r][0] in area_of]
+        if not votes: continue
+        out.append({'area': max(set(votes), key=votes.count), 'map': L['map'], 'depth': depth.get(i), 'recs': L['recs'], 'root': root.get(i)})
+    own = {x['area']: x['root'] for x in out if x['depth'] == 0}    # counted from another dungeon's teleporter: no number
+    for x in out:
+        if x['area'] in own and x['root'] != own[x['area']]: x['depth'] = None
+        del x['root']
+    out.sort(key=lambda x: (x['area'], x['depth'] if x['depth'] is not None else 99, x['map']))
+    return out
+
+
 def meta_ds(nds):
     names = species_names(nds)
     g = dgmtool.Game(nds)
@@ -116,7 +173,8 @@ def meta_ds(nds):
             'charset': dgmtool.Charset('sdb', dgmtool.load_lang('de')).dec, 'nameTable': NAME_TABLE, 'spriteTable': SPRITE_TABLE,
             'sources': sorted(i for i in dex if names[i].replace(' ', '') in want),
             'npc': [i for i in dex if names[i] in NPC_NAMES],
-            'items': {429 + i: n for i, n in enumerate(KEY_ITEMS)}, 'encAreas': enc_areas('ds')}
+            'items': {429 + i: n for i, n in enumerate(KEY_ITEMS)}, 'encAreas': enc_areas('ds'),
+            'encMaps': ds_enc_maps(nds)}
 
 
 # Dawn/Dusk: same data, the version decides which dungeons can be entered. Encounter areas (dat/ec/enctbl.bin) that a

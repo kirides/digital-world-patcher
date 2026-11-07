@@ -185,6 +185,7 @@ function encBuild() { ENC.table = encounterTable(model, rom, $('encmod').checked
 function secName(S) {
   if (S.cyber) return [t('enc.cyber'), t('enc.cyberSub')];
   if (S.area < 0) return [t('enc.area', { n: S.part }), ''];
+  if (S.map !== undefined) return [L(G.encAreas[S.area].name), S.part === 0 ? t('enc.tele') : S.part === null ? t('enc.mapOther') : t('enc.mapN', { n: S.part })];
   return [L(G.encAreas[S.area].name), t('enc.part', { n: S.part })];
 }
 function monRate(S, i) {   // share of battles with this Digimon, per variant
