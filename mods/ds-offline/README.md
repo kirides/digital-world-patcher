@@ -11,7 +11,7 @@ Mode, Numemon, Digitamamon and Imperialdramon (via Numemon), ChaosGallantmon, an
 | Paildramon → Imperialdramon Paladin Mode | Lv 70 + 40,000 Holy EXP |
 | WarGrowlmon → Gallantmon Crimson Mode | Lv 70 + 40,000 Dragon EXP |
 | Sukamon → Numemon → Digitamamon | Lv 15, Lv 30 |
-| Chibomon | wild in all parts of Data Forest, 15 % of encounters |
+| Chibomon | wild in the middle and the back (Ogremon) section of Data Forest, 15 % of encounters |
 | Veemon | wild in Sheer Valley, 12 % of encounters |
 
 Data only (dat/sk, dat/ec records rewritten in place); matching keeps working as in the original.
