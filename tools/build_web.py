@@ -78,6 +78,34 @@ TITLES = {'DIGIMONWORLD': ('ds', 'Digimon World DS'), 'DS2_USA_DAWN': ('dawn', '
           'DS2_USA_DUSK': ('dusk', 'Digimon World Dusk')}
 
 
+# encounter lookup on the page: dungeon names per encounter area. DS: battle area id (dat/ec record field 0, also the
+# battle background dat/BTMAP/<id>); Dawn/Dusk: area column of dat/ec/enctbl.bin. Named by their wild Digimon against
+# the location lists of the walkthroughs (DS: GameFAQs; Dawn/Dusk: SuperCheats), German names as in the translation.
+ENC_AREAS = {
+    'ds': [('Data Forest', 'Datenwald', [0, 1, 2]), ('Training Peak', 'Übungsgipfel', [3, 4, 5]),
+           ('Drain Tunnel', 'Drain-Tunnel', [6, 7, 8]), ('Steamy Jungle', 'Dampfjungel', [9, 10, 11]),
+           ('Sheer Valley', 'Steiltal', [13, 14, 15, 16, 17, 18]), ('Chrome Mine', 'Chrommine', [19, 20, 21]),
+           ('Packet Swamp', 'Paketsumpf', [22, 23, 24]), ('Mangrove Woods', 'Mangrovenwald', [25, 26, 27]),
+           ('Ancient Canyon', 'Alter Canyon', [28, 29, 30]), ('Junk Factory', 'Schrottwerk', [31, 32, 33]),
+           ('Hard Mountains', 'Hartgebirge', [34, 35, 36]), ('Undersea Drive', 'Meeresgrund', [37, 38, 39]),
+           ('Sky Palace', 'Lufttempel', [40, 41, 42]), ('Tropical Isles', 'Tropeninseln', [43, 44, 45, 46]),
+           ('Lava River', 'Lavafluss', [47, 48, 49]), ('Core Field', 'Kernfeld', [50, 51, 52, 53])],
+    'pak': [('Login Mountain', 'Loginberg', [2, 3]), ('Sunken Tunnel', 'Sunken Tunnel', [4, 5, 6, 7]),
+            ('Chip Forest', 'Chipwald', [8, 9, 10, 11, 12, 13, 14, 15]), ('Resistor Jungle', 'ResistorJungle', [16, 17, 18, 19]),
+            ('Limit Valley', 'Limit-Tal', [20, 21]), ('Magnet Mine', 'Magnetmine', [22, 23, 24, 25]),
+            ('Loop Swamp', 'Loop-Sumpf', [26, 27]), ('Palette Amazon', 'PaletteAmazon', [28, 29, 30]),
+            ('Task Canyon', 'Task Canyon', [31, 32, 33, 34, 35, 36, 55]), ('Process Factory', 'ProcessFactory', [37, 38, 39, 40, 41]),
+            ('Access Glacier', 'AccessGlacier', [42, 43, 48, 49]), ('Macro Sea', 'Macro Sea', [44, 45, 50, 51]),
+            ('Proxy Island', 'Proxy-Insel', [46, 47, 52, 53, 54]), ('Highlight Haven', 'HighlightHaven', [56, 57, 58]),
+            ('Shadow Abyss', 'Shadow Abyss', [59, 60]), ('Chaos Brain', 'Chaos-Hirn', [61]), ('Transfield', 'Transfield', [62]),
+            ('Thriller Ruins', 'Thriller Ruins', [66])]}
+ENC_EXTRA = {'pak': {'cyber': 49}}   # e049: the red data rooms that open in many dungeons, shown once
+
+
+def enc_areas(layout):
+    return [{'name': {'en': en, 'de': de}, 'ids': ids} for en, de, ids in ENC_AREAS[layout]]
+
+
 def meta_ds(nds):
     names = species_names(nds)
     g = dgmtool.Game(nds)
@@ -88,7 +116,7 @@ def meta_ds(nds):
             'charset': dgmtool.Charset('sdb', dgmtool.load_lang('de')).dec, 'nameTable': NAME_TABLE, 'spriteTable': SPRITE_TABLE,
             'sources': sorted(i for i in dex if names[i].replace(' ', '') in want),
             'npc': [i for i in dex if names[i] in NPC_NAMES],
-            'items': {429 + i: n for i, n in enumerate(KEY_ITEMS)}}
+            'items': {429 + i: n for i, n in enumerate(KEY_ITEMS)}, 'encAreas': enc_areas('ds')}
 
 
 # Dawn/Dusk: same data, the version decides which dungeons can be entered. Encounter areas (dat/ec/enctbl.bin) that a
@@ -118,7 +146,8 @@ def meta_pak(nds):
     return {**SOUND['pak'], 'layout': 'pak', 'skSize': 112, 'nconds': 2, 'conds': CONDS_PAK, 'befriended': 22, 'idBase': 65,
             'charset': dgmtool.Charset('pak', dgmtool.load_lang('de')).dec, 'nameStart': start,
             'sources': sorted({s for p in reach for s in species[p]}), 'reachFiles': sorted(reach),
-            'reachNote': 'reach.notePak'}
+            'reachNote': 'reach.notePak', 'encAreas': enc_areas('pak'), **ENC_EXTRA['pak'],
+            'lockedAreas': LOCKED_AREAS[game], 'otherVersion': 'Dusk' if game == 'dawn' else 'Dawn'}
 
 
 def decode_sk(rec, game):

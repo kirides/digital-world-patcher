@@ -8,7 +8,7 @@ const [romDir, rel, scratch] = process.argv.slice(2);
 const WEB = path.join(__dirname, '..', 'web'), core = fs.readFileSync(path.join(WEB, 'core.js'), 'utf8');
 global.DW_META = JSON.parse(fs.readFileSync(path.join(WEB, 'data', 'meta.json'), 'utf8'));
 const atob = s => Buffer.from(s, 'base64').toString('binary');
-const api = new Function('atob', 'fetch', core + '; return { loadModel, icon, patchRom, presetState, reachable, exportJSON, importJSON, META, INLINE, b64 };')(atob, null);
+const api = new Function('atob', 'fetch', core + '; return { loadModel, ndsFiles, records, icon, encounterTable, sectorThumb, patchRom, presetState, reachable, exportJSON, importJSON, META, INLINE, b64 };')(atob, null);
 const rd = p => new Uint8Array(fs.readFileSync(p));
 global.localStorage = { getItem: () => null, setItem() {} }; global.document = { addEventListener() {} };
 const SDAT = new Function(fs.readFileSync(path.join(WEB, 'sound.js'), 'utf8') + '; return SDAT;')();
@@ -45,6 +45,12 @@ for (const [game, enFile, deName] of games) {
     check(game + `: music renders (${m.seconds.toFixed(0)} s, loop ${m.loopStart !== undefined ? m.loopStart.toFixed(1) + '-' + m.loopEnd.toFixed(1) : 'none'}), digivolve jingle ${j.seconds.toFixed(1)} s`, () => m.peak > 0.05 && j.peak > 0.05 && m.loopEnd > 0, r => r === true); }
   let icons = 0, t0 = Date.now(); for (const x of mE.dex) if (api.icon(E, mE, x)) icons++;
   console.log(`     icons ${icons}/${mE.dex.length} in ${Date.now() - t0} ms`);
+  { // encounter lookup: the preview with the mod equals the encounters of the patched ROM; every sector has a thumbnail
+    const pre = game === 'ds' ? 'ds-offline' : 'dawn-dusk-offline', P = api.patchRom(E, mE, { tr: null, enc: true, evo: api.presetState(mE, pre) }, null);
+    const strip = T => JSON.stringify(T.map(S => S.variants.map(v => v.map(f => [f.mons, f.p.toFixed(4), f.lv]))));
+    const T = api.encounterTable(mE, E, true), fP = api.ndsFiles(P), TP = api.encounterTable({ ...mE, files: fP, ec: game === 'ds' ? api.records(P, fP, 'ec', 102) : [] }, P, false);
+    check(game + `: encounter lookup, ${T.length} sectors, mod preview = patched ROM`, () => strip(T) === strip(TP) && T.some(S => S.variants.some(v => v.some(f => f.added))), r => r === true);
+    check(game + ': every sector has a thumbnail', () => T.filter(S => !api.sectorThumb(E, mE, S.thumb)).map(S => S.id), r => r.length === 0); }
   if (game !== 'ds') {
     const G = game[0].toUpperCase() + game.slice(1), off = api.presetState(mE, 'dawn-dusk-offline'), offD = api.presetState(mD, 'dawn-dusk-offline');
     check(game + ': EN -> Offline (= tools/mod.py)', () => api.patchRom(E, mE, { tr: null, enc: true, evo: off }, null), path.join(scratch, G + '_off.nds'));

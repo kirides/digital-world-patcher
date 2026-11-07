@@ -525,6 +525,189 @@
     "497": "Medal of Honor",
     "498": "Miracle DM"
    },
+   "encAreas": [
+    {
+     "name": {
+      "en": "Data Forest",
+      "de": "Datenwald"
+     },
+     "ids": [
+      0,
+      1,
+      2
+     ]
+    },
+    {
+     "name": {
+      "en": "Training Peak",
+      "de": "Übungsgipfel"
+     },
+     "ids": [
+      3,
+      4,
+      5
+     ]
+    },
+    {
+     "name": {
+      "en": "Drain Tunnel",
+      "de": "Drain-Tunnel"
+     },
+     "ids": [
+      6,
+      7,
+      8
+     ]
+    },
+    {
+     "name": {
+      "en": "Steamy Jungle",
+      "de": "Dampfjungel"
+     },
+     "ids": [
+      9,
+      10,
+      11
+     ]
+    },
+    {
+     "name": {
+      "en": "Sheer Valley",
+      "de": "Steiltal"
+     },
+     "ids": [
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
+     ]
+    },
+    {
+     "name": {
+      "en": "Chrome Mine",
+      "de": "Chrommine"
+     },
+     "ids": [
+      19,
+      20,
+      21
+     ]
+    },
+    {
+     "name": {
+      "en": "Packet Swamp",
+      "de": "Paketsumpf"
+     },
+     "ids": [
+      22,
+      23,
+      24
+     ]
+    },
+    {
+     "name": {
+      "en": "Mangrove Woods",
+      "de": "Mangrovenwald"
+     },
+     "ids": [
+      25,
+      26,
+      27
+     ]
+    },
+    {
+     "name": {
+      "en": "Ancient Canyon",
+      "de": "Alter Canyon"
+     },
+     "ids": [
+      28,
+      29,
+      30
+     ]
+    },
+    {
+     "name": {
+      "en": "Junk Factory",
+      "de": "Schrottwerk"
+     },
+     "ids": [
+      31,
+      32,
+      33
+     ]
+    },
+    {
+     "name": {
+      "en": "Hard Mountains",
+      "de": "Hartgebirge"
+     },
+     "ids": [
+      34,
+      35,
+      36
+     ]
+    },
+    {
+     "name": {
+      "en": "Undersea Drive",
+      "de": "Meeresgrund"
+     },
+     "ids": [
+      37,
+      38,
+      39
+     ]
+    },
+    {
+     "name": {
+      "en": "Sky Palace",
+      "de": "Lufttempel"
+     },
+     "ids": [
+      40,
+      41,
+      42
+     ]
+    },
+    {
+     "name": {
+      "en": "Tropical Isles",
+      "de": "Tropeninseln"
+     },
+     "ids": [
+      43,
+      44,
+      45,
+      46
+     ]
+    },
+    {
+     "name": {
+      "en": "Lava River",
+      "de": "Lavafluss"
+     },
+     "ids": [
+      47,
+      48,
+      49
+     ]
+    },
+    {
+     "name": {
+      "en": "Core Field",
+      "de": "Kernfeld"
+     },
+     "ids": [
+      50,
+      51,
+      52,
+      53
+     ]
+    }
+   ],
    "title": "Digimon World DS",
    "translations": {
     "de": {
@@ -1185,6 +1368,229 @@
     "dat/ec/e073.bin"
    ],
    "reachNote": "reach.notePak",
+   "encAreas": [
+    {
+     "name": {
+      "en": "Login Mountain",
+      "de": "Loginberg"
+     },
+     "ids": [
+      2,
+      3
+     ]
+    },
+    {
+     "name": {
+      "en": "Sunken Tunnel",
+      "de": "Sunken Tunnel"
+     },
+     "ids": [
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    {
+     "name": {
+      "en": "Chip Forest",
+      "de": "Chipwald"
+     },
+     "ids": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+     ]
+    },
+    {
+     "name": {
+      "en": "Resistor Jungle",
+      "de": "ResistorJungle"
+     },
+     "ids": [
+      16,
+      17,
+      18,
+      19
+     ]
+    },
+    {
+     "name": {
+      "en": "Limit Valley",
+      "de": "Limit-Tal"
+     },
+     "ids": [
+      20,
+      21
+     ]
+    },
+    {
+     "name": {
+      "en": "Magnet Mine",
+      "de": "Magnetmine"
+     },
+     "ids": [
+      22,
+      23,
+      24,
+      25
+     ]
+    },
+    {
+     "name": {
+      "en": "Loop Swamp",
+      "de": "Loop-Sumpf"
+     },
+     "ids": [
+      26,
+      27
+     ]
+    },
+    {
+     "name": {
+      "en": "Palette Amazon",
+      "de": "PaletteAmazon"
+     },
+     "ids": [
+      28,
+      29,
+      30
+     ]
+    },
+    {
+     "name": {
+      "en": "Task Canyon",
+      "de": "Task Canyon"
+     },
+     "ids": [
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      55
+     ]
+    },
+    {
+     "name": {
+      "en": "Process Factory",
+      "de": "ProcessFactory"
+     },
+     "ids": [
+      37,
+      38,
+      39,
+      40,
+      41
+     ]
+    },
+    {
+     "name": {
+      "en": "Access Glacier",
+      "de": "AccessGlacier"
+     },
+     "ids": [
+      42,
+      43,
+      48,
+      49
+     ]
+    },
+    {
+     "name": {
+      "en": "Macro Sea",
+      "de": "Macro Sea"
+     },
+     "ids": [
+      44,
+      45,
+      50,
+      51
+     ]
+    },
+    {
+     "name": {
+      "en": "Proxy Island",
+      "de": "Proxy-Insel"
+     },
+     "ids": [
+      46,
+      47,
+      52,
+      53,
+      54
+     ]
+    },
+    {
+     "name": {
+      "en": "Highlight Haven",
+      "de": "HighlightHaven"
+     },
+     "ids": [
+      56,
+      57,
+      58
+     ]
+    },
+    {
+     "name": {
+      "en": "Shadow Abyss",
+      "de": "Shadow Abyss"
+     },
+     "ids": [
+      59,
+      60
+     ]
+    },
+    {
+     "name": {
+      "en": "Chaos Brain",
+      "de": "Chaos-Hirn"
+     },
+     "ids": [
+      61
+     ]
+    },
+    {
+     "name": {
+      "en": "Transfield",
+      "de": "Transfield"
+     },
+     "ids": [
+      62
+     ]
+    },
+    {
+     "name": {
+      "en": "Thriller Ruins",
+      "de": "Thriller Ruins"
+     },
+     "ids": [
+      66
+     ]
+    }
+   ],
+   "cyber": 49,
+   "lockedAreas": [
+    22,
+    23,
+    24,
+    25,
+    37,
+    38,
+    39,
+    40,
+    41,
+    59,
+    60
+   ],
+   "otherVersion": "Dusk",
    "title": "Digimon World Dawn",
    "translations": {
     "de": {
@@ -2348,6 +2754,228 @@
     "dat/ec/e073.bin"
    ],
    "reachNote": "reach.notePak",
+   "encAreas": [
+    {
+     "name": {
+      "en": "Login Mountain",
+      "de": "Loginberg"
+     },
+     "ids": [
+      2,
+      3
+     ]
+    },
+    {
+     "name": {
+      "en": "Sunken Tunnel",
+      "de": "Sunken Tunnel"
+     },
+     "ids": [
+      4,
+      5,
+      6,
+      7
+     ]
+    },
+    {
+     "name": {
+      "en": "Chip Forest",
+      "de": "Chipwald"
+     },
+     "ids": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+     ]
+    },
+    {
+     "name": {
+      "en": "Resistor Jungle",
+      "de": "ResistorJungle"
+     },
+     "ids": [
+      16,
+      17,
+      18,
+      19
+     ]
+    },
+    {
+     "name": {
+      "en": "Limit Valley",
+      "de": "Limit-Tal"
+     },
+     "ids": [
+      20,
+      21
+     ]
+    },
+    {
+     "name": {
+      "en": "Magnet Mine",
+      "de": "Magnetmine"
+     },
+     "ids": [
+      22,
+      23,
+      24,
+      25
+     ]
+    },
+    {
+     "name": {
+      "en": "Loop Swamp",
+      "de": "Loop-Sumpf"
+     },
+     "ids": [
+      26,
+      27
+     ]
+    },
+    {
+     "name": {
+      "en": "Palette Amazon",
+      "de": "PaletteAmazon"
+     },
+     "ids": [
+      28,
+      29,
+      30
+     ]
+    },
+    {
+     "name": {
+      "en": "Task Canyon",
+      "de": "Task Canyon"
+     },
+     "ids": [
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      55
+     ]
+    },
+    {
+     "name": {
+      "en": "Process Factory",
+      "de": "ProcessFactory"
+     },
+     "ids": [
+      37,
+      38,
+      39,
+      40,
+      41
+     ]
+    },
+    {
+     "name": {
+      "en": "Access Glacier",
+      "de": "AccessGlacier"
+     },
+     "ids": [
+      42,
+      43,
+      48,
+      49
+     ]
+    },
+    {
+     "name": {
+      "en": "Macro Sea",
+      "de": "Macro Sea"
+     },
+     "ids": [
+      44,
+      45,
+      50,
+      51
+     ]
+    },
+    {
+     "name": {
+      "en": "Proxy Island",
+      "de": "Proxy-Insel"
+     },
+     "ids": [
+      46,
+      47,
+      52,
+      53,
+      54
+     ]
+    },
+    {
+     "name": {
+      "en": "Highlight Haven",
+      "de": "HighlightHaven"
+     },
+     "ids": [
+      56,
+      57,
+      58
+     ]
+    },
+    {
+     "name": {
+      "en": "Shadow Abyss",
+      "de": "Shadow Abyss"
+     },
+     "ids": [
+      59,
+      60
+     ]
+    },
+    {
+     "name": {
+      "en": "Chaos Brain",
+      "de": "Chaos-Hirn"
+     },
+     "ids": [
+      61
+     ]
+    },
+    {
+     "name": {
+      "en": "Transfield",
+      "de": "Transfield"
+     },
+     "ids": [
+      62
+     ]
+    },
+    {
+     "name": {
+      "en": "Thriller Ruins",
+      "de": "Thriller Ruins"
+     },
+     "ids": [
+      66
+     ]
+    }
+   ],
+   "cyber": 49,
+   "lockedAreas": [
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    55,
+    56,
+    57,
+    58
+   ],
+   "otherVersion": "Dawn",
    "title": "Digimon World Dusk",
    "translations": {
     "de": {

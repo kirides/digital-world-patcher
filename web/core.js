@@ -236,6 +236,95 @@ function wildCopyFiles(model, d, files) {   // Dawn/Dusk: same as tools/mod.py w
   }
   return out;
 }
+// ---- encounter lookup: every random encounter of the ROM, grouped by sector, optionally with the mod's additions
+function encounterTable(model, rom, withMod) {
+  const G = G_(model), areaOf = {}, out = [];
+  (G.encAreas || []).forEach((a, k) => a.ids.forEach((id, j) => areaOf[id] = [k, j + 1]));
+  if (model.game === 'ds') {
+    const mod = {}; if (withMod) for (const [p, o, b] of encounterEdits(model)) mod[p + ':' + o] = b;
+    const sec = {};
+    for (const { path, off, rec } of model.ec) {
+      const orig = new Uint16Array(rec.slice().buffer), m = mod[path + ':' + off], u = m ? new Uint16Array(m.slice().buffer) : orig;
+      if (u[2] !== 400) continue;                          // 500: scripted battles (bosses, arena), not random
+      const forms = [];
+      for (let s = 0; s < 8; s++) { const pr = u[3 + 6 * s]; if (pr === 0 || pr === 0xFFFF) continue;
+        forms.push({ p: pr / 10000, mons: [...u.subarray(4 + 6 * s, 9 + 6 * s)].filter(x => x !== 0xFFFF), added: orig[3 + 6 * s] === 0 || orig[3 + 6 * s] === 0xFFFF }); }
+      if (!forms.length) continue;
+      const S = sec[u[0]] || (sec[u[0]] = { id: u[0], thumb: { ds: u[0] }, variants: [] }), key = JSON.stringify(forms);
+      if (!S.variants.some(v => JSON.stringify(v) === key)) S.variants.push(forms);
+    }
+    for (const S of Object.values(sec)) { const a = areaOf[S.id]; S.area = a ? a[0] : -1; S.part = a ? a[1] : S.id; out.push(S); }
+  } else {
+    const f = model.files, dv = dvOf(rom), [es, ee] = f['dat/ec/enctbl.bin'], copies = withMod ? wildCopyFiles(model, rom, f) : {};
+    const byFile = {};
+    for (let m = 0; es + 8 * m + 8 <= ee; m++) {
+      const a = dv.getUint16(es + 8 * m, true), e = dv.getUint16(es + 8 * m + 2, true), path = 'dat/ec/e' + String(e).padStart(3, '0') + '.bin';
+      if (a === 0xFFFF || !f[path]) continue;
+      const S = byFile[e] || (byFile[e] = { id: e, path, areas: [], maps: [] });
+      if (!S.areas.includes(a)) S.areas.push(a); S.maps.push(m);
+    }
+    const locked = new Set(G.lockedAreas || []);
+    for (const S of Object.values(byFile)) {
+      const b = copies[S.path] || rom.subarray(f[S.path][0], f[S.path][1]), d = dvOf(b), n = d.getUint16(0, true);
+      const n0 = dv.getUint16(f[S.path][0], true), list = [];
+      for (let k = 0; k < n; k++) list.push({ mons: [d.getUint16(16 + 24 * k, true)], w: d.getUint16(34 + 24 * k, true), lv: d.getUint16(36 + 24 * k, true), added: k >= n0 });
+      for (let k = list.length; k--;) if (!model.names[list[k].mons[0]]) list.splice(k, 1);
+      if (!list.some(x => x.lv)) continue;          // files without levels are no random encounters
+      const sum = list.reduce((x, y) => x + y.w, 0) || 1; list.forEach(x => { x.p = x.w / sum; delete x.w; });
+      const a = areaOf[S.areas[0]];
+      out.push({ id: S.id, cyber: S.id === G.cyber, area: S.id === G.cyber ? -2 : a ? a[0] : -1, part: 0, areas: S.areas,
+        locked: S.areas.every(x => locked.has(x)), thumb: { map: S.maps[0] }, variants: [list] });
+    }
+    const cnt = {}; out.sort((x, y) => x.id - y.id).forEach(S => { if (S.area >= 0) S.part = cnt[S.area] = (cnt[S.area] || 0) + 1; else S.part = S.areas[0]; });
+  }
+  const ord = S => S.area < 0 ? 1e6 - S.area : S.area * 1000 + S.part;
+  return out.sort((x, y) => ord(x) - ord(y));
+}
+function rgb555(v) { return [(v & 31) * 255 / 31 | 0, (v >> 5 & 31) * 255 / 31 | 0, (v >> 10 & 31) * 255 / 31 | 0]; }
+function drawTiles(img, W, H, tiles, bpp, pal, map, w, skip0, blocks) {   // 8x8 tile map onto an RGBA buffer
+  const tb = bpp === 4 ? 32 : 64, tw = w / 8, bw = w / 256;   // blocks: hardware layout in 32x32-tile screens (NSCR > 256 px)
+  for (let k = 0; k < map.length; k++) {
+    const e = map[k], t = e & 0x3FF, hf = e >> 10 & 1, vf = e >> 11 & 1, pb = e >> 12, b = k >> 10, j = k & 1023;
+    const tx = blocks ? (b % bw) * 32 + (j & 31) : k % tw, ty = blocks ? ((b / bw) | 0) * 32 + (j >> 5) : (k / tw) | 0;
+    if (ty * 8 >= H) break; if (tx * 8 >= W) continue;
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) {
+      const q = t * tb + (bpp === 4 ? y * 4 + (x >> 1) : y * 8 + x); if (q >= tiles.length) continue;
+      const v = bpp === 4 ? (x & 1 ? tiles[q] >> 4 : tiles[q] & 15) : tiles[q]; if (v === 0 && skip0) continue;
+      const ci = bpp === 4 ? pb * 16 + v : v; if (ci >= pal.length) continue;
+      const X = tx * 8 + (hf ? 7 - x : x), Y = ty * 8 + (vf ? 7 - y : y), o = (Y * W + X) * 4, c = pal[ci];
+      img[o] = c[0]; img[o + 1] = c[1]; img[o + 2] = c[2]; img[o + 3] = 255;
+    }
+  }
+}
+function sectorThumb(rom, model, thumb) {   // -> {w, h, rgba}: DS battle background, Dawn/Dusk field map
+  const f = model.files, get = p => f[p] ? decomp(rom.subarray(f[p][0], f[p][1])) : null;
+  try {
+    if (thumb.ds !== undefined) {
+      const p = 'dat/BTMAP/' + thumb.ds + 'a', cg = get(p + 'c'), pl = get(p + 'p'), sc = get(p + 's'); if (!cg || !pl || !sc) return null;
+      const C = sections(cg).RAHC, P = sections(pl).TTLP, S = sections(sc).NRCS, cd = dvOf(C), pd = dvOf(P), sd = dvOf(S);
+      const bpp = cd.getUint32(4, true) === 3 ? 4 : 8, tiles = C.subarray(cd.getUint32(20, true), cd.getUint32(20, true) + cd.getUint32(16, true));
+      const praw = P.subarray(pd.getUint32(12, true)), pal = []; for (let i = 0; i + 1 < praw.length; i += 2) pal.push(rgb555(praw[i] | praw[i + 1] << 8));
+      const w = sd.getUint16(0, true), size = sd.getUint32(8, true), map = new Uint16Array(S.slice(12, 12 + size).buffer);
+      const W = Math.min(256, w), H = Math.min(192, sd.getUint16(2, true)), rgba = new Uint8ClampedArray(W * H * 4);
+      drawTiles(rgba, W, H, tiles, bpp, pal, map, w, false, w > 256); return { w: W, h: H, rgba };
+    }
+    const layers = [];               // two layers; the one with fewer transparent pixels is the bottom one
+    for (const L of ['b', 'a']) {      // tie: b is the bottom one
+      const p = 'dat/map/' + thumb.map + L + '.', c = get(p + 'c'), pl = get(p + 'p'), s = get(p + 's'); if (!c || !pl || !s) continue;
+      const sd = dvOf(s), w = sd.getUint16(0, true), h = sd.getUint16(2, true), pal = [];
+      for (let i = 4; i + 1 < pl.length; i += 2) pal.push(rgb555(pl[i] | pl[i + 1] << 8));
+      const ly = { w, h, pal, tiles: c.subarray(4), map: new Uint16Array(s.slice(4, 4 + ((s.length - 4) & ~1)).buffer) };
+      const probe = new Uint8ClampedArray(w * h * 4); drawTiles(probe, w, h, ly.tiles, 4, pal, ly.map, w, true);
+      let holes = 0; for (let i = 3; i < probe.length; i += 16) if (!probe[i]) holes++;
+      ly.holes = holes; layers.push(ly);
+    }
+    if (!layers.length) return null;
+    layers.sort((x, y) => x.holes - y.holes);
+    const W = layers[0].w, H = layers[0].h, rgba = new Uint8ClampedArray(W * H * 4);
+    layers.forEach((ly, k) => drawTiles(rgba, W, H, ly.tiles, 4, ly.pal, ly.map, ly.w, k > 0));
+    return rgba ? { w: W, h: H, rgba } : null;
+  } catch (e) { return null; }
+}
 function crc16(d, n) { let c = 0xFFFF; for (let i = 0; i < n; i++) { c ^= d[i]; for (let k = 0; k < 8; k++) c = c & 1 ? (c >>> 1) ^ 0xA001 : c >>> 1; } return c; }
 function writeFiles(d, files, list) {   // same algorithm as tools/ndsfs.py build(): in place if it fits, else appended
   const dv = dvOf(d), fat = dv.getUint32(0x48, true), fsz = dv.getUint32(0x4C, true) / 8, ids = {};

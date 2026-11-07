@@ -181,6 +181,40 @@ input[type=checkbox],input[type=radio]{accent-color:var(--orange);width:1.25em;h
   select,input[type=number],input[type=text],input:not([type]){font-size:inherit}
 }
 /* very narrow phones: the volume slider gives way to the music picker (mute stays) */
+/* encounter lookup */
+#encs .toolbar .pick{flex:1 1 14em}
+#encs .chk{margin:0}
+.secs{display:grid;gap:.7em}
+.sec{background:#071226aa;border:1px solid var(--line);border-radius:12px;padding:.55em;min-width:0}
+.sec.hit{border-color:var(--line2)}
+.sec-top{display:flex;gap:.7em;align-items:center}
+.thumb{width:112px;height:84px;flex:none;border-radius:8px;border:1px solid var(--line2);background:var(--bg2);object-fit:cover;image-rendering:pixelated}
+.sec-h{min-width:0;flex:1}
+.sec-h b{display:block;font-size:1.02em}
+.sec-h .mut{font-size:.85em}
+.sec .tag.lock{background:#ff5c7a33;color:var(--red);margin-left:0}
+.rate{font:700 1.6em/1.1 system-ui,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;color:var(--gold);text-shadow:0 0 12px #ffd16655}
+.rate small{font-size:.55em;color:var(--mut);font-weight:400}
+.sec details{margin-top:.45em}
+.peek{display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-top:.25em}
+.peek .ico{width:26px;height:26px}
+.sec summary{cursor:pointer;color:var(--cyan);font-size:.92em;min-height:32px;display:flex;align-items:center}
+.vars{display:flex;flex-wrap:wrap;gap:.3em;margin:.3em 0}
+.vars button{min-height:32px;padding:.1em .7em;font-size:.85em}
+.vars button.on{border-color:var(--orange);box-shadow:inset 0 0 0 2px var(--orange)}
+.forms{display:flex;flex-direction:column}
+.form{display:flex;align-items:center;gap:.5em;padding:.2em .3em;border-radius:8px;border-left:3px solid transparent}
+.form.me{background:#ffd1661a;border-left-color:var(--gold)}
+.form .mons{display:flex;flex-wrap:wrap;align-items:center;gap:.1em .5em;flex:1;min-width:0}
+.form .mons span{display:inline-flex;align-items:center;gap:3px;cursor:pointer} .form .mons span:hover{color:var(--cyan)}
+.form .ico{width:30px;height:30px}
+.form .pct{font-weight:650;font-variant-numeric:tabular-nums;min-width:4.2em;text-align:right}
+.form .lv{font-size:.82em;font-variant-numeric:tabular-nums;color:var(--mut);min-width:3.4em;text-align:right}
+.form .tag{margin-left:.2em}
+@media (min-width:860px){
+  .secs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .thumb{width:144px;height:108px}
+}
 @media (max-width:389px){#vol{display:none}}
 /* own chevron for selects: room on the right so it never touches the border */
 select{-webkit-appearance:none;appearance:none;padding-right:2.1em;

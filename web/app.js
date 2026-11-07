@@ -29,7 +29,7 @@ async function loadLang(code) {
   document.title = t('meta.title');
   $('lang').innerHTML = opts(Object.entries(META.languages).map(([c, n]) => [c, n]), code);
   setMuted(DWSound.muted);
-  if (model) { fillGameUI(false); refresh(); soundLists(); }
+  if (model) { fillGameUI(false); refresh(); soundLists(); encRender(); }
 }
 $('lang').onchange = () => { localStorage.setItem('dw-lang', $('lang').value); loadLang($('lang').value); };
 
@@ -67,6 +67,7 @@ function renderDetail() {
   let h = `<div class="mon"><div class="portrait">${ICON[cur] ? `<img src="${ICON[cur]}" alt="">` : ''}</div><div>
     <h3>${N(cur)}${changed(model, st, cur) ? `<span class="tag">${t('ed.changed')}</span>` : ''}</h3>
     <p class="chips"><span class="mut" style="cursor:default">${t('ed.from')}</span> ${from.map(i => `<span data-go="${i}">${img(i)}${N(i)}</span>`).join('') || `<i class="mut">${t('ed.fromNone')}</i>`}</p>
+    <p class="chips"><span data-where="${cur}">⌕ ${t('enc.where')}</span></p>
     ${wild.length ? `<p class="wild">${t('ed.wild')} ${wild.join(' · ')} ${$('enc').checked ? '' : `<span class="err">${t('ed.wildOff')}</span>`}</p>` : ''}
   </div></div><div class="routes">`;
   const condOpts = G.conds.map(x => [x[0], t(x[1])]);
@@ -99,6 +100,7 @@ function renderDetail() {
   $('prev').onclick = () => openPick($('prev'), true, v => { st[cur].p = v; refresh(); });
   $('rst').onclick = () => { st[cur] = clone(model.evo[cur]); refresh(); };
   $('detail').querySelectorAll('[data-go]').forEach(el => el.onclick = () => { cur = +el.dataset.go; refresh(); });
+  $('detail').querySelectorAll('[data-where]').forEach(el => el.onclick = () => { encShow(+el.dataset.where); $('encs').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
 }
 function refresh() {
   const have = reachable(model, st, $('enc').checked), miss = have ? COUNTED.filter(i => !have.has(i)) : [];
@@ -142,7 +144,7 @@ var loadFile = async function (file) {
   const version = model.lang === 'en' ? t('ver.en') : t('ver.tr', { lang: ((G.translations || {})[model.lang] || {}).name || model.lang });
   $('msg1').innerHTML = `<span class="ok">${esc(t('s1.loaded', { file: file.name, game: G.title, version, count: DEX.length }))}</span>`;
   fillGameUI(true); $('enc').checked = !!(G.encounters || G.wildCopy);
-  st = presetState(model, $('preset').value); cur = DEX[0]; $('main').classList.remove('hide'); $('step1').classList.add('loaded'); refresh(); soundSetup();
+  st = presetState(model, $('preset').value); cur = DEX[0]; $('main').classList.remove('hide'); $('step1').classList.add('loaded'); refresh(); soundSetup(); encSetup();
 };
 $('rom').onchange = e => e.target.files[0] && loadFile(e.target.files[0]);
 const drop = $('drop');
@@ -169,6 +171,65 @@ $('go').onclick = async () => {
     $('msg').textContent = t('s3.done', { file: name }); $('msg').className = 'ok';
   } catch (err) { $('msg').textContent = err.message; $('msg').className = 'err'; }
 };
+
+// ---- encounter lookup: sectors of the loaded ROM with thumbnails, the searched Digimon's rate, every encounter
+const ENC = { mon: null, table: null, thumbs: {}, obs: null, vars: {} };
+const pct = p => (p * 100).toFixed(p * 100 < 10 && p * 100 % 1 ? 1 : 0).replace('.', LANG === 'de' ? ',' : '.') + ' %';
+function encSetup() {
+  const has = !!(G.encounters || G.wildCopy), mod = Object.values(G.presetNames || {})[0];
+  $('encmodlab').classList.toggle('hide', !has); $('encmod').checked = has && $('enc').checked;
+  $('encmodtext').textContent = mod ? t('enc.mod', { mod: L(mod) }) : '';
+  ENC.thumbs = {}; ENC.vars = {}; ENC.mon = null; encBuild();
+}
+function encBuild() { ENC.table = encounterTable(model, rom, $('encmod').checked); encRender(); }
+function secName(S) {
+  if (S.cyber) return [t('enc.cyber'), t('enc.cyberSub')];
+  if (S.area < 0) return [t('enc.area', { n: S.part }), ''];
+  return [L(G.encAreas[S.area].name), t('enc.part', { n: S.part })];
+}
+function monRate(S, i) {   // share of battles with this Digimon, per variant
+  return S.variants.map(v => v.reduce((x, f) => x + (f.mons.includes(i) ? f.p : 0), 0));
+}
+function encRender() {
+  const i = ENC.mon;
+  $('encpick').innerHTML = i === null ? `<span class="ico"></span><span class="mut">${t('enc.pick')}</span>` : img(i) + '<span>' + N(i) + '</span>';
+  $('encall').classList.toggle('hide', i === null);
+  let list = ENC.table.map(S => ({ S, r: i === null ? null : monRate(S, i) }));
+  if (i !== null) list = list.filter(x => Math.max(...x.r) > 0).sort((a, b) => (a.S.locked - b.S.locked) || Math.max(...b.r) - Math.max(...a.r));   // other version's dungeons last
+  $('encsum').innerHTML = i === null ? t('enc.allCount', { n: list.length })
+    : list.length ? t('enc.count', { name: esc(N(i)), n: list.length }) : t('enc.countNone', { name: esc(N(i)), mod: $('encmod').checked ? '' : t('enc.modOff') });
+  $('enclist').innerHTML = '<div class="secs">' + list.map(({ S, r }) => {
+    const [name, sub] = secName(S), key = S.id, v = ENC.vars[key] || 0, forms = S.variants[v];
+    const lo = r && Math.min(...r), hi = r && Math.max(...r);
+    const uniq = [...new Set(S.variants.flatMap(v => v.flatMap(f => f.mons)))];
+    const rate = r ? `<div class="rate">${lo === hi ? pct(hi) : pct(lo) + '–' + pct(hi)}</div>`
+      : `<div class="peek">${uniq.slice(0, 12).map(m => img(m)).join('')}${uniq.length > 12 ? `<span class="mut">+${uniq.length - 12}</span>` : ''}</div>`;
+    const lock = S.locked ? `<span class="tag lock">${t('enc.locked', { game: G.otherVersion })}</span>` : '';
+    const vars = S.variants.length > 1 ? `<p class="mut">${t('enc.variants', { n: S.variants.length })}</p><div class="vars">${S.variants.map((_, k) =>
+      `<button type="button" class="ghost${k === v ? ' on' : ''}" data-var="${k}">${t('enc.variant', { n: k + 1 })}${r ? ' · ' + pct(r[k]) : ''}</button>`).join('')}</div>` : '';
+    const rows = forms.slice().sort((a, b) => b.p - a.p).map(f => `<div class="form${i !== null && f.mons.includes(i) ? ' me' : ''}"><div class="mons">${f.mons.map(m =>
+      `<span data-mon="${m}" title="${esc(t('enc.show', { name: N(m) }))}">${img(m)}${esc(N(m))}</span>`).join('')}${f.added ? `<span class="tag">${t('enc.added')}</span>` : ''}</div>` +
+      (f.lv ? `<span class="lv">${t('enc.lv', { n: f.lv })}</span>` : '') + `<span class="pct">${pct(f.p)}</span></div>`).join('');
+    return `<div class="sec${r ? ' hit' : ''}" data-sec="${key}"><div class="sec-top"><img class="thumb" alt="" data-thumb='${JSON.stringify(S.thumb)}'>
+      <div class="sec-h"><b>${esc(name)}</b><span class="mut">${esc(sub)}</span> ${lock}${rate}</div></div>
+      <details${i !== null ? ' open' : ''}><summary>${t('enc.list', { n: forms.length })}</summary>${vars}<div class="forms">${rows}</div></details></div>`;
+  }).join('') + '</div>';
+  const box = $('enclist');
+  box.querySelectorAll('[data-var]').forEach(b => b.onclick = () => { ENC.vars[b.closest('.sec').dataset.sec] = +b.dataset.var; encRender(); });
+  box.querySelectorAll('[data-mon]').forEach(el => el.onclick = () => { cur = +el.dataset.mon; refresh(); $('ed').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  if (ENC.obs) ENC.obs.disconnect();      // thumbnails are drawn when they scroll into view
+  ENC.obs = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { ENC.obs.unobserve(e.target); drawThumb(e.target); } }), { rootMargin: '200px' });
+  box.querySelectorAll('img[data-thumb]').forEach(el => ENC.obs.observe(el));
+}
+function drawThumb(el) {
+  const k = el.dataset.thumb;
+  if (!(k in ENC.thumbs)) { const im = sectorThumb(rom, model, JSON.parse(k)); ENC.thumbs[k] = im ? toDataURL(im) : ''; }
+  if (ENC.thumbs[k]) el.src = ENC.thumbs[k];
+}
+function encShow(i) { ENC.mon = i; encRender(); }
+$('encpick').onclick = () => openPick($('encpick'), true, v => encShow(v));
+$('encall').onclick = () => encShow(null);
+$('encmod').onchange = encBuild;
 
 // ---- sound: theme music, digivolve sound, sound test (settings in localStorage, ROM data never stored)
 const SND = { key: k => 'dw-' + (k === 'evo' ? 'evo2' : k) + '-' + (model ? model.game : ''), jingles: [] };   // evo2: old choices used the wrong default

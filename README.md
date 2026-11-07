@@ -6,7 +6,9 @@ Fan translations and data mods for **Digimon World DS**, **Digimon World Dawn** 
 
 Load your own ROM. The page recognises the game by its checksum, applies the German translation, and lets you edit
 every digivolution route (presets such as "Offline: every Digimon without matching", or your own routes, shareable as
-JSON). Everything runs locally; the ROM never leaves your device. No ROMs are part of this repository.
+JSON). A lookup shows where every Digimon appears in the wild and how often: each section with a picture from the
+ROM (DS: battle background, Dawn/Dusk: field map) and its full encounter list, with or without the mod's additions.
+Everything runs locally; the ROM never leaves your device. No ROMs are part of this repository.
 
 **Privacy:** the page loads nothing from third parties (no external fonts, scripts, CDNs, analytics or cookies);
 all files come from this repository. Only your settings (mute, music, digivolve sound) are kept in your browser's
