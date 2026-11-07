@@ -75,11 +75,13 @@
  "encounters": [
   {
    "areas": [
-    1
+    0,
+    1,
+    2
    ],
    "species": 9,
    "species_name": "Chibomon",
-   "chance": 800,
+   "chance": 1500,
    "where": "Data Forest"
   },
   {
@@ -93,7 +95,7 @@
    ],
    "species": 13,
    "species_name": "Veemon",
-   "chance": 800,
+   "chance": 1200,
    "where": "Sheer Valley"
   }
  ]
