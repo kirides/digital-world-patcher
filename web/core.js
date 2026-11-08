@@ -80,7 +80,7 @@ function spriteImage(cg, pl, ce) {     // first cell of a sprite -> {w, h, rgba}
   if (!oams.length) return null;
   const x0 = Math.min(...oams.map(o => o.x)), y0 = Math.min(...oams.map(o => o.y));
   const W = Math.max(...oams.map(o => o.x + o.w)) - x0, H = Math.max(...oams.map(o => o.y + o.h)) - y0;
-  const px = new Uint8ClampedArray(W * H * 4), unit = mapping < 0x10 ? 32 << (mapping & 3) : 32, tb = bpp === 4 ? 32 : 64;
+  const px = new Uint8ClampedArray(W * H * 4), px32 = new Uint32Array(px.buffer), pk = pal.map(c => 0xFF000000 | c[2] << 16 | c[1] << 8 | c[0]), unit = mapping < 0x10 ? 32 << (mapping & 3) : 32, tb = bpp === 4 ? 32 : 64;
   for (const o of [...oams].reverse()) {
     const start = o.tile * unit, tw = o.w / 8;
     for (let ty = 0; ty < o.h / 8; ty++) for (let tx = 0; tx < tw; tx++) { const tt = start + (ty * tw + tx) * tb;
@@ -90,11 +90,11 @@ function spriteImage(cg, pl, ce) {     // first cell of a sprite -> {w, h, rgba}
         else { const q = tt + yy * 8 + xx; if (q >= D.length) continue; v = D[q]; ci = v; }
         if (!v || ci >= pal.length) continue;
         let X = tx * 8 + xx, Y = ty * 8 + yy; if (o.hf) X = o.w - 1 - X; if (o.vf) Y = o.h - 1 - Y;
-        const i = ((o.y - y0 + Y) * W + (o.x - x0 + X)) * 4; px[i] = pal[ci][0]; px[i + 1] = pal[ci][1]; px[i + 2] = pal[ci][2]; px[i + 3] = 255;
+        px32[(o.y - y0 + Y) * W + (o.x - x0 + X)] = pk[ci];
       } }
   }
   let a = W, b = H, c = -1, e = -1;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (px[(y * W + x) * 4 + 3]) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); e = Math.max(e, y); }
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (px32[y * W + x]) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); e = Math.max(e, y); }
   if (c < 0) return null;
   const w2 = c - a + 1, h2 = e - b + 1, out = new Uint8ClampedArray(w2 * h2 * 4);
   for (let y = 0; y < h2; y++) out.set(px.subarray(((y + b) * W + a) * 4, ((y + b) * W + a + w2) * 4), y * w2 * 4);
@@ -312,7 +312,7 @@ function encodeEncounters(model, out, f, edits) {   // -> write the edited table
 }
 function rgb555(v) { return [(v & 31) * 255 / 31 | 0, (v >> 5 & 31) * 255 / 31 | 0, (v >> 10 & 31) * 255 / 31 | 0]; }
 function drawTiles(img, W, H, tiles, bpp, pal, map, w, skip0, blocks) {   // 8x8 tile map onto an RGBA buffer
-  const tb = bpp === 4 ? 32 : 64, tw = w / 8, bw = w / 256;   // blocks: hardware layout in 32x32-tile screens (NSCR > 256 px)
+  const tb = bpp === 4 ? 32 : 64, tw = w / 8, bw = w / 256, i32 = new Uint32Array(img.buffer, img.byteOffset, img.length >> 2), pk = pal.map(c => 0xFF000000 | c[2] << 16 | c[1] << 8 | c[0]);   // blocks: hardware layout in 32x32-tile screens (NSCR > 256 px)
   for (let k = 0; k < map.length; k++) {
     const e = map[k], t = e & 0x3FF, hf = e >> 10 & 1, vf = e >> 11 & 1, pb = e >> 12, b = k >> 10, j = k & 1023;
     const tx = blocks ? (b % bw) * 32 + (j & 31) : k % tw, ty = blocks ? ((b / bw) | 0) * 32 + (j >> 5) : (k / tw) | 0;
@@ -321,8 +321,8 @@ function drawTiles(img, W, H, tiles, bpp, pal, map, w, skip0, blocks) {   // 8x8
       const q = t * tb + (bpp === 4 ? y * 4 + (x >> 1) : y * 8 + x); if (q >= tiles.length) continue;
       const v = bpp === 4 ? (x & 1 ? tiles[q] >> 4 : tiles[q] & 15) : tiles[q]; if (v === 0 && skip0) continue;
       const ci = bpp === 4 ? pb * 16 + v : v; if (ci >= pal.length) continue;
-      const X = tx * 8 + (hf ? 7 - x : x), Y = ty * 8 + (vf ? 7 - y : y), o = (Y * W + X) * 4, c = pal[ci];
-      img[o] = c[0]; img[o + 1] = c[1]; img[o + 2] = c[2]; img[o + 3] = 255;
+      const X = tx * 8 + (hf ? 7 - x : x), Y = ty * 8 + (vf ? 7 - y : y);
+      i32[Y * W + X] = pk[ci];
     }
   }
 }

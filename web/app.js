@@ -128,8 +128,9 @@ function refresh() {
   $('list').querySelectorAll('.row').forEach(el => el.onclick = () => { cur = +el.dataset.i; refresh(); });
   renderDetail();
 }
+let CV = null;   // one canvas reused for all conversions
 function toDataURL(im) {
-  const c = document.createElement('canvas'); c.width = im.w; c.height = im.h;
+  const c = CV || (CV = document.createElement('canvas')); c.width = im.w; c.height = im.h;   // resizing also clears it
   c.getContext('2d').putImageData(new ImageData(im.rgba, im.w, im.h), 0, 0); return c.toDataURL();
 }
 // presets, translation choice, extra encounters: depend on game and page language
