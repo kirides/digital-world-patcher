@@ -6,7 +6,19 @@ const t = (k, v) => tr(k, v);
 var DW_T = k => (k in TXT ? TXT[k] : TXT_EN[k]);
 const L = o => (o && typeof o === 'object') ? (o[LANG] ?? o.en ?? Object.values(o)[0]) : o;   // {de, en} -> text
 const N = i => (model.names[i] || '#' + i) + (dupe[i] ? ' #' + i : '');
-const img = (i, cls = 'ico') => ICON[i] ? `<img class="${cls}" src="${ICON[i]}" alt="">` : `<span class="${cls}"></span>`;
+// Icons are decoded lazily: only when an <img data-ic> scrolls into view (decoding + PNG-encoding ~hundreds of sprites up front took seconds).
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+function iconURL(i) {
+  if (!(i in ICON)) { const im = rom && icon(rom, model, i); ICON[i] = im ? toDataURL(im) : ''; }
+  return ICON[i];
+}
+const img = (i, cls = 'ico') => (i in ICON) ? (ICON[i] ? `<img class="${cls}" src="${ICON[i]}" alt="">` : `<span class="${cls}"></span>`)
+  : `<img class="${cls}" src="${BLANK}" data-ic="${i}" alt="">`;
+const ICON_IO = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; ICON_IO.unobserve(e.target);
+  const u = iconURL(+e.target.dataset.ic); if (u) e.target.src = u; else e.target.style.visibility = 'hidden'; }), { rootMargin: '200px' });
+new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType !== 1) return;
+  if (n.dataset && n.dataset.ic) ICON_IO.observe(n); n.querySelectorAll && n.querySelectorAll('img[data-ic]').forEach(x => ICON_IO.observe(x)); })))
+  .observe(document.body, { childList: true, subtree: true });
 const condOf = c => G.conds.find(x => x[0] === c) || [c, null, 1];
 const condName = c => { const d = condOf(c); return d[1] ? t(d[1]) : t('ed.type', { n: c }); };
 const opts = (list, sel) => list.map(([v, x]) => `<option value="${v}"${v === sel ? ' selected' : ''}>${x}</option>`).join('');
@@ -64,7 +76,7 @@ function renderDetail() {
   const go = i => `<button class="go" data-go="${i}" title="${esc(t('ed.goto', { name: N(i) }))}">➜</button>`;
   const wild = [...(G.encounters || []).filter(x => x[1] === cur).map(x => t('ed.wildEnc', { where: x[3], pct: x[2] / 100 })),
     ...(G.wildCopy || []).filter(w => w[2] === cur).map(w => t('ed.wildIn', { file: w[0].replace('dat/ec/', '') }))];
-  let h = `<div class="mon"><div class="portrait">${ICON[cur] ? `<img src="${ICON[cur]}" alt="">` : ''}</div><div>
+  let h = `<div class="mon"><div class="portrait">${iconURL(cur) ? `<img src="${iconURL(cur)}" alt="">` : ''}</div><div>
     <h3>${N(cur)}${changed(model, st, cur) ? `<span class="tag">${t('ed.changed')}</span>` : ''}</h3>
     <p class="chips"><span class="mut" style="cursor:default">${t('ed.from')}</span> ${from.map(i => `<span data-go="${i}">${img(i)}${N(i)}</span>`).join('') || `<i class="mut">${t('ed.fromNone')}</i>`}</p>
     <p class="chips"><span data-where="${cur}">⌕ ${t('enc.where')}</span></p>
@@ -137,10 +149,6 @@ var loadFile = async function (file) {
   catch (err) { $('msg1').textContent = err.message; $('msg1').className = 'err'; return; }
   DEX = model.dex; COUNTED = DEX.filter(i => !(G.npc || []).includes(i)); dupe = {}; ICON = {};
   const seen = {}; DEX.forEach(i => { if (model.names[i] in seen) dupe[i] = 1; else seen[model.names[i]] = 1; });
-  for (let j = 0; j < DEX.length; j++) {
-    const im = icon(rom, model, DEX[j]); if (im) ICON[DEX[j]] = toDataURL(im);
-    if (j % 20 === 0) { $('msg1').textContent = t('s1.icons', { n: j, total: DEX.length }); await new Promise(r => setTimeout(r)); }
-  }
   const version = model.lang === 'en' ? t('ver.en') : t('ver.tr', { lang: ((G.translations || {})[model.lang] || {}).name || model.lang });
   $('msg1').innerHTML = `<span class="ok">${esc(t('s1.loaded', { file: file.name, game: G.title, version, count: DEX.length }))}</span>`;
   fillGameUI(true); $('enc').checked = !!(G.encounters || G.wildCopy);
